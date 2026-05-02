@@ -1,65 +1,75 @@
-import Image from "next/image";
+"use client";
+
+import { useRef } from "react";
+import Link from "next/link";
+import gsap from "gsap";
+import ScrollTrigger from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
+import { HuruGeometrySection } from "@/components/huru-geometry-section";
+import { HuruMotionPanels } from "@/components/huru-motion-panels";
+import { HuruNavbar } from "@/components/huru-navbar";
+import { HuruHero } from "@/components/huru-hero";
+
+gsap.registerPlugin(ScrollTrigger);
 
 export default function Home() {
+  const mainRef = useRef<HTMLElement>(null);
+
+  useGSAP(
+    () => {
+      if (!mainRef.current) return;
+      const scope = mainRef.current;
+
+      // Footer: fade in
+      const footer = scope.querySelector("[data-footer]");
+      if (footer) {
+        gsap.fromTo(
+          footer,
+          { y: 16, opacity: 0 },
+          {
+            y: 0,
+            opacity: 1,
+            duration: 0.6,
+            ease: "power3.out",
+            scrollTrigger: {
+              trigger: footer,
+              start: "top 95%",
+              once: true,
+            },
+          },
+        );
+      }
+    },
+    { scope: mainRef },
+  );
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main ref={mainRef} className="relative flex-1 w-full overflow-x-hidden">
+      <div className="relative mx-auto w-full max-w-6xl px-5 py-6 sm:px-8 lg:px-12">
+        <HuruNavbar />
+      </div>
+
+      <HuruHero />
+
+      <div className="relative mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-12">
+        <div className="flex flex-col gap-16 pb-12 sm:gap-28 sm:pb-20">
+
+          {/* Geometric illustrations */}
+          <HuruGeometrySection />
+
+          {/* Features bento */}
+          <HuruMotionPanels />
+
+          {/* Footer */}
+          <footer data-footer className="flex flex-col items-center gap-3 border-t border-og-border pt-6 pb-4 text-xs text-og-text-3 sm:flex-row sm:justify-between sm:gap-0 sm:pt-8">
+            <span>Huru — AI inference on 0G</span>
+            <div className="flex gap-5">
+              <Link href="/docs" className="transition hover:text-og-black">Docs</Link>
+              <Link href="/dashboard" className="transition hover:text-og-black">Dashboard</Link>
+            </div>
+          </footer>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 }
