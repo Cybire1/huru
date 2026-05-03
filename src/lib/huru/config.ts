@@ -53,4 +53,18 @@ export const creditPacks: HuruCreditPack[] = [
     currency: runtimeConfig.defaultCurrency,
     creditsAwarded: 1400,
   },
+  {
+    packId: "credits_300",
+    name: "Growth Top-Up",
+    amountMinor: 30000,
+    currency: runtimeConfig.defaultCurrency,
+    creditsAwarded: 5000,
+  },
+  {
+    packId: "credits_1000",
+    name: "Scale Top-Up",
+    amountMinor: 100000,
+    currency: runtimeConfig.defaultCurrency,
+    creditsAwarded: 25000,
+  },
 ];

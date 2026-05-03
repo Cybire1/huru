@@ -4,7 +4,7 @@ import { runtimeConfig } from "@/lib/huru/config";
 import type { HuruUsageRecord, HuruVerificationRecord } from "@/lib/huru/types";
 
 type Broker = Awaited<ReturnType<typeof createZGComputeNetworkBroker>>;
-type ZeroGServiceType = "chatbot" | "speech-to-text";
+type ZeroGServiceType = "chatbot" | "speech-to-text" | "text-to-image";
 
 interface HuruChatMessage {
   role: string;
@@ -66,6 +66,20 @@ interface ZeroGTranscriptionResponse {
   }>;
 }
 
+interface ZeroGImageResponse {
+  created?: number;
+  data?: Array<{
+    url?: string;
+    b64_json?: string;
+    revised_prompt?: string;
+  }>;
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    total_tokens?: number;
+  };
+}
+
 const NON_RETRYABLE_STATUSES = new Set([400, 401, 403, 422]);
 const MAX_FAILOVER_ATTEMPTS = 3;
 const FAILURE_TTL_MS = 5 * 60 * 1000;
@@ -109,6 +123,17 @@ export function estimateTranscriptionCredits(file: File): number {
   const durationEstimate = Math.max(1, Math.ceil(file.size / 16000));
   const estimatedTokens = Math.max(1, durationEstimate * 25);
   return estimateCredits(estimatedTokens);
+}
+
+const IMAGE_SIZE_MULTIPLIERS: Record<string, number> = {
+  "512x512": 0.5,
+  "1024x1024": 1,
+  "1792x1024": 1.75,
+};
+
+export function estimateImageCredits(n: number, size: string): number {
+  const multiplier = IMAGE_SIZE_MULTIPLIERS[size] ?? 1;
+  return Math.max(1, Math.ceil(10 * n * multiplier));
 }
 
 export function buildVerification(
@@ -668,6 +693,93 @@ class ZeroGRuntimeClient {
       },
     );
   }
+
+  async runImageGeneration(payload: {
+    model: string;
+    prompt: string;
+    n: number;
+    size: string;
+    response_format: string;
+  }): Promise<RuntimeResult> {
+    return this.executeWithFailover(
+      "text-to-image",
+      async (provider) => {
+        await this.ensureProviderReady(provider.provider);
+
+        const metadata = await this.broker.inference.getServiceMetadata(
+          provider.provider,
+        );
+        const headers = await this.broker.inference.getRequestHeaders(
+          provider.provider,
+        );
+
+        const response = await fetch(
+          `${metadata.endpoint}/images/generations`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...headers,
+            },
+            body: JSON.stringify({
+              model: metadata.model,
+              prompt: payload.prompt,
+              n: payload.n,
+              size: payload.size,
+              response_format: payload.response_format,
+            }),
+          },
+        );
+
+        if (!response.ok) {
+          const detail = await response
+            .text()
+            .catch(() => "Unknown provider error");
+          throw new Error(
+            `0G image generation failed (${response.status}): ${detail}`,
+          );
+        }
+
+        const data = (await response.json()) as ZeroGImageResponse;
+        const responseKey =
+          response.headers.get("ZG-Res-Key") ||
+          response.headers.get("zg-res-key") ||
+          null;
+
+        if (responseKey) {
+          await this.broker.inference.processResponse(
+            provider.provider,
+            responseKey,
+            JSON.stringify(data.usage ?? {}),
+          );
+        }
+
+        const creditsUsed = estimateImageCredits(
+          data.data?.length ?? payload.n,
+          payload.size,
+        );
+
+        return {
+          body: {
+            ...data,
+            object: "image.generation",
+            model: payload.model,
+            provider_model: metadata.model,
+          },
+          usage: {
+            promptTokens: estimateTokens(payload.prompt),
+            completionTokens: 0,
+            totalTokens: estimateTokens(payload.prompt),
+            creditsUsed,
+          },
+          verification: buildVerification(
+            provider.provider,
+            provider.verifiability,
+          ),
+        };
+      },
+    );
+  }
 }
 
 async function getRuntimeClient() {
@@ -700,4 +812,15 @@ export async function runChatCompletionStream(payload: {
 export async function runTranscription(file: File): Promise<RuntimeResult> {
   const runtime = await getRuntimeClient();
   return runtime.runTranscription(file);
+}
+
+export async function runImageGeneration(payload: {
+  model: string;
+  prompt: string;
+  n: number;
+  size: string;
+  response_format: string;
+}): Promise<RuntimeResult> {
+  const runtime = await getRuntimeClient();
+  return runtime.runImageGeneration(payload);
 }

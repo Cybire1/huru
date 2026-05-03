@@ -866,6 +866,243 @@ async function supabaseBalanceForProject(projectId: string, environment: HuruEnv
   return asNumber(result.data?.balance_credits) ?? 0;
 }
 
+export interface HuruDashboardAnalytics {
+  daily: Array<{
+    date: string;
+    requests: number;
+    creditsUsed: number;
+  }>;
+  endpoints: Array<{
+    endpoint: string;
+    requests: number;
+    creditsUsed: number;
+  }>;
+  verification: {
+    total: number;
+    verified: number;
+    rate: number;
+  };
+  burnRate: {
+    avgDailyCredits: number;
+    currentBalance: number;
+    estimatedDaysRemaining: number | null;
+  };
+  consumers: Array<{
+    email: string;
+    name: string | null;
+    requests: number;
+    creditsUsed: number;
+  }>;
+  requests: {
+    items: Array<{
+      id: string;
+      endpoint: string;
+      method: string;
+      model: string;
+      status: string;
+      creditsUsed: number;
+      startedAt: string;
+      completedAt: string | null;
+      verified: boolean;
+      verificationMode: string;
+      consumerEmail: string | null;
+    }>;
+    total: number;
+    page: number;
+    pageSize: number;
+  };
+}
+
+export async function getDashboardAnalytics(
+  accessToken: string,
+  projectPublicId: string,
+  options?: {
+    page?: number;
+    pageSize?: number;
+    endpointFilter?: string;
+    statusFilter?: string;
+  },
+): Promise<HuruDashboardAnalytics | null> {
+  const resolved = await fetchProjectRowForOwner(accessToken, projectPublicId);
+  if (!resolved) {
+    return null;
+  }
+
+  const supabase = getSupabaseAdmin();
+  if (!supabase) {
+    throw new Error("Supabase is not configured.");
+  }
+
+  const { projectRow } = resolved;
+  const page = options?.page ?? 1;
+  const pageSize = Math.min(options?.pageSize ?? 20, 100);
+  const offset = (page - 1) * pageSize;
+
+  // Daily breakdown (last 30 days)
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const requestsResult = await supabase
+    .from("huru_requests")
+    .select("id, endpoint, method, model_alias, status, started_at, completed_at, credits_used, consumer_email")
+    .eq("project_id", projectRow.id)
+    .gte("started_at", thirtyDaysAgo.toISOString())
+    .order("started_at", { ascending: false });
+
+  if (requestsResult.error) {
+    throw requestsResult.error;
+  }
+
+  const allRequests = (requestsResult.data ?? []) as Array<{
+    id: string;
+    endpoint: string;
+    method: string;
+    model_alias: string | null;
+    status: string;
+    started_at: string;
+    completed_at: string | null;
+    credits_used: number | string | null;
+    consumer_email: string | null;
+  }>;
+
+  // Daily aggregation
+  const dailyMap = new Map<string, { requests: number; creditsUsed: number }>();
+  for (const req of allRequests) {
+    const date = req.started_at.slice(0, 10);
+    const existing = dailyMap.get(date) ?? { requests: 0, creditsUsed: 0 };
+    existing.requests += 1;
+    existing.creditsUsed += asNumber(req.credits_used);
+    dailyMap.set(date, existing);
+  }
+  const daily = Array.from(dailyMap.entries())
+    .map(([date, data]) => ({ date, ...data }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  // Endpoint aggregation
+  const endpointMap = new Map<string, { requests: number; creditsUsed: number }>();
+  for (const req of allRequests) {
+    const existing = endpointMap.get(req.endpoint) ?? { requests: 0, creditsUsed: 0 };
+    existing.requests += 1;
+    existing.creditsUsed += asNumber(req.credits_used);
+    endpointMap.set(req.endpoint, existing);
+  }
+  const endpoints = Array.from(endpointMap.entries())
+    .map(([endpoint, data]) => ({ endpoint, ...data }))
+    .sort((a, b) => b.requests - a.requests);
+
+  // Verification stats
+  const requestIds = allRequests.map((r) => r.id);
+  let verifiedCount = 0;
+  if (requestIds.length > 0) {
+    const verResult = await supabase
+      .from("huru_request_verifications")
+      .select("verified")
+      .in("request_id", requestIds)
+      .eq("verified", true);
+
+    if (!verResult.error) {
+      verifiedCount = verResult.data?.length ?? 0;
+    }
+  }
+
+  const totalRequests = allRequests.length;
+  const verificationRate = totalRequests > 0 ? verifiedCount / totalRequests : 0;
+
+  // Burn rate
+  const environment = coerceEnvironment(projectRow.environment_mode);
+  const creditResult = await supabase
+    .from("huru_credit_accounts")
+    .select("balance_credits")
+    .eq("project_id", projectRow.id)
+    .eq("environment", environment)
+    .maybeSingle<Pick<DashboardCreditRow, "balance_credits">>();
+
+  const currentBalance = asNumber(creditResult.data?.balance_credits);
+  const daysWithData = dailyMap.size || 1;
+  const totalCreditsUsed = daily.reduce((sum, d) => sum + d.creditsUsed, 0);
+  const avgDailyCredits = Math.round(totalCreditsUsed / daysWithData);
+  const estimatedDaysRemaining =
+    avgDailyCredits > 0 ? Math.floor(currentBalance / avgDailyCredits) : null;
+
+  // Consumer breakdown
+  const consumerMap = new Map<string, { name: string | null; requests: number; creditsUsed: number }>();
+  for (const req of allRequests) {
+    const key = req.consumer_email ?? "unknown";
+    const existing = consumerMap.get(key) ?? { name: null, requests: 0, creditsUsed: 0 };
+    existing.requests += 1;
+    existing.creditsUsed += asNumber(req.credits_used);
+    consumerMap.set(key, existing);
+  }
+  const consumers = Array.from(consumerMap.entries())
+    .map(([email, data]) => ({ email, ...data }))
+    .sort((a, b) => b.creditsUsed - a.creditsUsed)
+    .slice(0, 10);
+
+  // Paginated request list with filters
+  let filteredRequests = allRequests;
+  if (options?.endpointFilter) {
+    filteredRequests = filteredRequests.filter((r) => r.endpoint === options.endpointFilter);
+  }
+  if (options?.statusFilter) {
+    filteredRequests = filteredRequests.filter((r) => r.status === options.statusFilter);
+  }
+
+  const paginatedItems = filteredRequests.slice(offset, offset + pageSize);
+
+  // Get verification data for paginated items
+  const paginatedIds = paginatedItems.map((r) => r.id);
+  const paginatedVerMap = new Map<string, { verified: boolean; verification_mode: string | null }>();
+  if (paginatedIds.length > 0) {
+    const paginatedVerResult = await supabase
+      .from("huru_request_verifications")
+      .select("request_id, verified, verification_mode")
+      .in("request_id", paginatedIds);
+
+    if (!paginatedVerResult.error) {
+      for (const v of paginatedVerResult.data ?? []) {
+        paginatedVerMap.set(v.request_id, { verified: v.verified, verification_mode: v.verification_mode });
+      }
+    }
+  }
+
+  return {
+    daily,
+    endpoints,
+    verification: {
+      total: totalRequests,
+      verified: verifiedCount,
+      rate: Math.round(verificationRate * 10000) / 100,
+    },
+    burnRate: {
+      avgDailyCredits,
+      currentBalance,
+      estimatedDaysRemaining,
+    },
+    consumers,
+    requests: {
+      items: paginatedItems.map((req) => {
+        const ver = paginatedVerMap.get(req.id);
+        return {
+          id: req.id,
+          endpoint: req.endpoint,
+          method: req.method,
+          model: req.model_alias ?? "unknown",
+          status: req.status,
+          creditsUsed: asNumber(req.credits_used),
+          startedAt: req.started_at,
+          completedAt: req.completed_at,
+          verified: ver?.verified ?? false,
+          verificationMode: ver?.verification_mode ?? "unknown",
+          consumerEmail: req.consumer_email,
+        };
+      }),
+      total: filteredRequests.length,
+      page,
+      pageSize,
+    },
+  };
+}
+
 export async function resolvePlaygroundProject(
   accessToken: string,
   projectPublicId: string,

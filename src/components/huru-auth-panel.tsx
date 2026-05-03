@@ -18,6 +18,12 @@ import {
   SparkIcon,
   TerminalIcon,
 } from "@/components/huru-icons";
+import {
+  BurnRateCard,
+  EndpointBarChart,
+  UsageLineChart,
+  VerificationBadge,
+} from "@/components/dashboard/usage-charts";
 
 /* ────────────────────────────────────────── constants ── */
 
@@ -25,6 +31,8 @@ const creditPacks = [
   { packId: "credits_10", name: "Starter", amountMinor: 1000, currency: "NGN", creditsAwarded: 100 },
   { packId: "credits_25", name: "Builder", amountMinor: 2500, currency: "NGN", creditsAwarded: 300 },
   { packId: "credits_100", name: "Pilot", amountMinor: 10000, currency: "NGN", creditsAwarded: 1400 },
+  { packId: "credits_300", name: "Growth", amountMinor: 30000, currency: "NGN", creditsAwarded: 5000 },
+  { packId: "credits_1000", name: "Scale", amountMinor: 100000, currency: "NGN", creditsAwarded: 25000 },
 ] as const;
 
 const localDemoApiKey = "sk_test_huru_local_dev";
@@ -65,6 +73,22 @@ type DashboardProjectDetail = {
     verifiedAt: string | null; creditedAt: string | null; paidAt: string | null;
   }>;
   key: { id: string; prefix: string } | null;
+};
+
+type DashboardAnalytics = {
+  daily: Array<{ date: string; requests: number; creditsUsed: number }>;
+  endpoints: Array<{ endpoint: string; requests: number; creditsUsed: number }>;
+  verification: { total: number; verified: number; rate: number };
+  burnRate: { avgDailyCredits: number; currentBalance: number; estimatedDaysRemaining: number | null };
+  consumers: Array<{ email: string; name: string | null; requests: number; creditsUsed: number }>;
+  requests: {
+    items: Array<{
+      id: string; endpoint: string; method: string; model: string; status: string;
+      creditsUsed: number; startedAt: string; completedAt: string | null;
+      verified: boolean; verificationMode: string; consumerEmail: string | null;
+    }>;
+    total: number; page: number; pageSize: number;
+  };
 };
 
 /* ────────────────────────────────────────── helpers ── */
@@ -166,6 +190,13 @@ export function HuruAuthPanel() {
   const [copyLabel, setCopyLabel] = useState<string | null>(null);
   const [pgCopyLabel, setPgCopyLabel] = useState<string | null>(null);
   const pgMessagesRef = useRef<HTMLDivElement>(null);
+
+  /* ── Analytics state ── */
+  const [analytics, setAnalytics] = useState<DashboardAnalytics | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsPage, setAnalyticsPage] = useState(1);
+  const [analyticsEndpointFilter, setAnalyticsEndpointFilter] = useState("");
+  const [analyticsStatusFilter, setAnalyticsStatusFilter] = useState("");
 
   const flashCopy = useCallback((text: string, setter: (v: string | null) => void) => {
     void navigator.clipboard.writeText(text);
@@ -280,6 +311,27 @@ export function HuruAuthPanel() {
     void load();
     return () => { mounted = false; };
   }, [supabase, overview, selectedProjectId]);
+
+  /* ── Data: analytics ── */
+  useEffect(() => {
+    if (!supabase || !overview || !selectedProjectId || activeSection !== "usage") return;
+    let mounted = true;
+    const load = async () => {
+      setAnalyticsLoading(true);
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token || !mounted) { setAnalyticsLoading(false); return; }
+      const params = new URLSearchParams({ page: String(analyticsPage), pageSize: "20" });
+      if (analyticsEndpointFilter) params.set("endpoint", analyticsEndpointFilter);
+      if (analyticsStatusFilter) params.set("status", analyticsStatusFilter);
+      const res = await fetch(`/api/dashboard/projects/${selectedProjectId}/analytics?${params}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!mounted) return;
+      if (res.ok) setAnalytics((await res.json()) as DashboardAnalytics);
+      setAnalyticsLoading(false);
+    };
+    void load();
+    return () => { mounted = false; };
+  }, [supabase, overview, selectedProjectId, activeSection, analyticsPage, analyticsEndpointFilter, analyticsStatusFilter]);
 
   /* ── Actions ── */
   const runDemoRequest = async () => {
@@ -870,77 +922,150 @@ print(data["choices"][0]["message"]["content"])`;
       return <EmptyState icon={ChartIcon} title="No project selected" description="Select a project to see its usage data." />;
     }
 
+    if (analyticsLoading && !analytics) return <SectionLoader />;
+
     return (
       <>
-        {/* Daily breakdown */}
-        {projectDetail.usage.breakdown.length > 0 ? (
-          <div data-huru-card className="rounded-lg border border-og-border bg-og-surface p-4 sm:rounded-xl sm:p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-og-text-3">Daily breakdown</p>
-            <div className="mt-4 grid gap-3">
-              {projectDetail.usage.breakdown.map((b) => {
-                const peak = Math.max(...projectDetail.usage.breakdown.map((r) => r.creditsUsed), 1);
-                const w = Math.max(4, Math.round((b.creditsUsed / peak) * 100));
-                return (
-                  <div key={b.date}>
-                    <div className="flex justify-between text-xs text-og-text-3">
-                      <span>{b.date}</span>
-                      <span>{b.requests} req / {b.creditsUsed} cr</span>
-                    </div>
-                    <div className="mt-1 h-2 rounded-full bg-og-surface-2">
-                      <div className="h-full rounded-full bg-og-black transition-all" style={{ width: `${w}%` }} />
+        {/* Charts section */}
+        {analytics ? (
+          <>
+            {/* Usage line chart */}
+            <div data-huru-card className="rounded-lg border border-og-border bg-og-surface p-4 sm:rounded-xl sm:p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-og-text-3">Usage (last 30 days)</p>
+              <div className="mt-4">
+                <UsageLineChart data={analytics.daily} />
+              </div>
+            </div>
+
+            {/* Stats row */}
+            <div className="grid gap-3 sm:grid-cols-3">
+              {/* Endpoint breakdown */}
+              <div data-huru-card className="rounded-lg border border-og-border bg-og-surface p-4 sm:rounded-xl sm:p-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-og-text-3">By endpoint</p>
+                <div className="mt-4">
+                  <EndpointBarChart data={analytics.endpoints} />
+                </div>
+              </div>
+
+              {/* Verification rate */}
+              <div data-huru-card className="rounded-lg border border-og-border bg-og-surface p-4 sm:rounded-xl sm:p-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-og-text-3">TEE verification</p>
+                <div className="mt-4 flex flex-col items-center gap-2">
+                  <VerificationBadge rate={analytics.verification.rate} />
+                  <p className="text-xs text-og-text-3">{analytics.verification.verified}/{analytics.verification.total} verified</p>
+                </div>
+              </div>
+
+              {/* Burn rate */}
+              <div data-huru-card className="rounded-lg border border-og-border bg-og-surface p-4 sm:rounded-xl sm:p-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-og-text-3">Credit burn rate</p>
+                <div className="mt-4">
+                  <BurnRateCard
+                    avgDailyCredits={analytics.burnRate.avgDailyCredits}
+                    currentBalance={analytics.burnRate.currentBalance}
+                    estimatedDaysRemaining={analytics.burnRate.estimatedDaysRemaining}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Consumer breakdown */}
+            {analytics.consumers.length > 0 && (
+              <div data-huru-card className="rounded-lg border border-og-border bg-og-surface p-4 sm:rounded-xl sm:p-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-og-text-3">Top consumers</p>
+                <div className="mt-3 overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-og-border text-left text-og-text-3">
+                        <th className="pb-2 pr-4 font-medium">Email</th>
+                        <th className="pb-2 pr-4 font-medium">Requests</th>
+                        <th className="pb-2 font-medium">Credits</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {analytics.consumers.map((c) => (
+                        <tr key={c.email} className="border-b border-og-border/50 last:border-0">
+                          <td className="py-2 pr-4 text-og-black">{c.email}</td>
+                          <td className="py-2 pr-4 font-mono text-og-text-2">{c.requests}</td>
+                          <td className="py-2 font-mono text-og-text-2">{c.creditsUsed}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Paginated request table */}
+            <div data-huru-card className="rounded-lg border border-og-border bg-og-surface p-4 sm:rounded-xl sm:p-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-og-text-3">Request history</p>
+                <div className="flex gap-2">
+                  <select value={analyticsEndpointFilter} onChange={(e) => { setAnalyticsEndpointFilter(e.target.value); setAnalyticsPage(1); }}
+                    className="rounded-md border border-og-border bg-og-bg px-2 py-1 text-xs text-og-text-2">
+                    <option value="">All endpoints</option>
+                    <option value="/v1/chat/completions">Chat</option>
+                    <option value="/v1/audio/transcriptions">Audio</option>
+                    <option value="/v1/images/generations">Image</option>
+                  </select>
+                  <select value={analyticsStatusFilter} onChange={(e) => { setAnalyticsStatusFilter(e.target.value); setAnalyticsPage(1); }}
+                    className="rounded-md border border-og-border bg-og-bg px-2 py-1 text-xs text-og-text-2">
+                    <option value="">All statuses</option>
+                    <option value="completed">Completed</option>
+                    <option value="failed">Failed</option>
+                    <option value="processing">Processing</option>
+                  </select>
+                </div>
+              </div>
+              {analytics.requests.items.length === 0 ? (
+                <p className="mt-4 text-sm text-og-text-3">No requests match the current filters.</p>
+              ) : (
+                <>
+                  <div className="mt-4 grid gap-2">
+                    {analytics.requests.items.map((req) => (
+                      <div key={req.id}
+                        className="rounded-lg border border-og-border p-2.5 transition hover:border-og-border-hover hover:bg-og-bg sm:p-3">
+                        <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm text-og-black">{req.method} {req.endpoint}</p>
+                            <p className="text-[11px] text-og-text-3 sm:text-xs">
+                              {req.model} — {req.creditsUsed} cr — {new Date(req.startedAt).toLocaleString()}
+                              {req.consumerEmail && <span> — {req.consumerEmail}</span>}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {req.verified && <ShieldTickIcon className="size-3.5 text-emerald-600" />}
+                            <span className={`text-xs font-medium ${req.status === "completed" ? "text-og-green" : "text-og-red"}`}>{req.status}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Pagination */}
+                  <div className="mt-4 flex items-center justify-between">
+                    <p className="text-xs text-og-text-3">
+                      {analytics.requests.total} total — page {analytics.requests.page}
+                    </p>
+                    <div className="flex gap-2">
+                      <button type="button" disabled={analyticsPage <= 1}
+                        onClick={() => setAnalyticsPage((p) => Math.max(1, p - 1))}
+                        className="rounded-md border border-og-border px-3 py-1 text-xs text-og-text-2 transition hover:bg-og-surface-2 disabled:opacity-40">
+                        Prev
+                      </button>
+                      <button type="button" disabled={analyticsPage * 20 >= analytics.requests.total}
+                        onClick={() => setAnalyticsPage((p) => p + 1)}
+                        className="rounded-md border border-og-border px-3 py-1 text-xs text-og-text-2 transition hover:bg-og-surface-2 disabled:opacity-40">
+                        Next
+                      </button>
                     </div>
                   </div>
-                );
-              })}
+                </>
+              )}
             </div>
-          </div>
+          </>
         ) : (
           <EmptyState icon={ChartIcon} title="No usage data" description="Make some API requests to see usage breakdown here." />
         )}
-
-        {/* Full request history */}
-        <div data-huru-card className="rounded-lg border border-og-border bg-og-surface p-4 sm:rounded-xl sm:p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-og-text-3">Request history</p>
-          {projectDetail.requests.length === 0 ? (
-            <p className="mt-4 text-sm text-og-text-3">No requests yet.</p>
-          ) : (
-            <div className="mt-4 grid gap-2">
-              {projectDetail.requests.map((req) => (
-                <div key={req.id} role="button" tabIndex={0}
-                  onClick={() => setSelectedRequestId((c) => c === req.id ? null : req.id)}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedRequestId((c) => c === req.id ? null : req.id); } }}
-                  className={`cursor-pointer rounded-lg border p-2.5 transition sm:p-3 ${selectedRequestId === req.id ? "border-og-border-hover bg-og-surface-2" : "border-og-border hover:border-og-border-hover hover:bg-og-bg"}`}>
-                  <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm text-og-black">{req.method} {req.endpoint}</p>
-                      <p className="text-[11px] text-og-text-3 sm:text-xs">{req.model} — {req.creditsUsed} cr — {new Date(req.startedAt).toLocaleString()}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`text-xs font-medium ${req.status === "completed" ? "text-og-green" : "text-og-red"}`}>{req.status}</span>
-                      <Link href={`/dashboard/requests/${req.id}`} onClick={(e) => e.stopPropagation()}
-                        className="rounded-md bg-og-surface-2 px-2 py-1 text-xs text-og-text-2 hover:text-og-black">
-                        Open
-                      </Link>
-                    </div>
-                  </div>
-                  {req.errorMessage && <p className="mt-2 text-xs text-og-red">{req.errorMessage}</p>}
-                  {selectedRequestId === req.id && (
-                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                      <div>
-                        <p className="text-xs text-og-text-3">Request</p>
-                        <pre className="mt-1 overflow-x-auto whitespace-pre-wrap rounded-lg bg-og-code-bg p-3 font-mono text-xs text-white/60">{req.requestPreview || "{}"}</pre>
-                      </div>
-                      <div>
-                        <p className="text-xs text-og-text-3">Response</p>
-                        <pre className="mt-1 overflow-x-auto whitespace-pre-wrap rounded-lg bg-og-code-bg p-3 font-mono text-xs text-white/60">{req.responsePreview || "{}"}</pre>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </>
     );
   };
