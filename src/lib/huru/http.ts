@@ -27,6 +27,14 @@ export function getIdempotencyKey(request: NextRequest): string | null {
   return key.trim();
 }
 
+export function getApiKey(request: NextRequest): string | null {
+  const key = request.headers.get("x-huru-api-key")?.trim();
+  if (!key) {
+    return null;
+  }
+  return key;
+}
+
 export function getConsumerEmail(request: NextRequest): string | null {
   const email = request.headers.get("x-consumer-email")?.trim();
   if (!email || !email.includes("@")) {

@@ -547,30 +547,22 @@ async function ensureBootstrapSeeded() {
 
       const keyHash = hashValue(runtimeConfig.bootstrapApiKey);
       const keyPrefix = makeKeyPrefix(runtimeConfig.bootstrapApiKey);
-      const existingKey = await supabase
-        .from("huru_api_keys")
-        .select("id")
-        .eq("key_hash", keyHash)
-        .eq("project_id", projectId)
-        .maybeSingle();
 
-      if (existingKey.error) {
-        throw existingKey.error;
-      }
-
-      if (!existingKey.data?.id) {
-        const createdKey = await supabase.from("huru_api_keys").insert({
+      // Upsert the bootstrap key — handles both fresh insert and key rotation
+      const upsertedKey = await supabase.from("huru_api_keys").upsert(
+        {
           public_id: bootstrapIdentity.keyPublicId,
           project_id: projectId,
           environment: bootstrapProject.environment,
           key_prefix: keyPrefix,
           key_hash: keyHash,
           name: bootstrapIdentity.keyName,
-        });
+        },
+        { onConflict: "public_id" },
+      );
 
-        if (createdKey.error) {
-          throw createdKey.error;
-        }
+      if (upsertedKey.error) {
+        throw upsertedKey.error;
       }
 
       const existingAccount = await supabase
@@ -840,6 +832,7 @@ export async function authenticateProject(apiKey: string | null): Promise<HuruPr
       .maybeSingle<ApiKeyRow>();
 
     if (apiKeyResult.error || !apiKeyResult.data || apiKeyResult.data.revoked_at) {
+      console.error("[huru/auth] key lookup failed:", { keyPrefix, error: apiKeyResult.error, hasData: !!apiKeyResult.data });
       return null;
     }
 
@@ -1770,6 +1763,8 @@ interface ConsumerRow {
   email: string;
   name: string | null;
   created_at: string;
+  auth_provider: string | null;
+  auth_provider_user_id: string | null;
 }
 
 interface ConsumerCreditAccountRow {
@@ -1797,6 +1792,8 @@ function mapConsumerRow(
     creditsBalance,
     storageId: row.id,
     createdAt: row.created_at,
+    authProvider: row.auth_provider ?? undefined,
+    authProviderUserId: row.auth_provider_user_id ?? undefined,
   };
 }
 
@@ -1804,16 +1801,20 @@ export async function resolveConsumer(
   project: HuruProjectRecord,
   email: string,
   name?: string,
+  authProvider?: string,
+  authProviderUserId?: string,
 ): Promise<HuruConsumerRecord> {
   return runWithStoreFallback(async () => {
     const supabase = getSupabaseAdmin();
     if (!supabase || !project.storageId) {
-      return resolveMemoryConsumer(project, email, name);
+      return resolveMemoryConsumer(project, email, name, authProvider, authProviderUserId);
     }
+
+    const selectCols = "id, public_id, project_id, email, name, created_at, auth_provider, auth_provider_user_id";
 
     const existing = await supabase
       .from("huru_consumers")
-      .select("id, public_id, project_id, email, name, created_at")
+      .select(selectCols)
       .eq("project_id", project.storageId)
       .eq("email", email)
       .maybeSingle<ConsumerRow>();
@@ -1823,12 +1824,25 @@ export async function resolveConsumer(
     }
 
     if (existing.data) {
+      const updates: Record<string, unknown> = {};
       if (name && !existing.data.name) {
+        updates.name = name;
+        existing.data.name = name;
+      }
+      if (authProvider && !existing.data.auth_provider) {
+        updates.auth_provider = authProvider;
+        existing.data.auth_provider = authProvider;
+      }
+      if (authProviderUserId && !existing.data.auth_provider_user_id) {
+        updates.auth_provider_user_id = authProviderUserId;
+        existing.data.auth_provider_user_id = authProviderUserId;
+      }
+      if (Object.keys(updates).length > 0) {
+        updates.updated_at = new Date().toISOString();
         await supabase
           .from("huru_consumers")
-          .update({ name, updated_at: new Date().toISOString() })
+          .update(updates)
           .eq("id", existing.data.id);
-        existing.data.name = name;
       }
 
       const creditResult = await supabase
@@ -1853,8 +1867,10 @@ export async function resolveConsumer(
         project_id: project.storageId,
         email,
         name: name ?? null,
+        auth_provider: authProvider ?? null,
+        auth_provider_user_id: authProviderUserId ?? null,
       })
-      .select("id, public_id, project_id, email, name, created_at")
+      .select(selectCols)
       .single<ConsumerRow>();
 
     if (created.error) {
@@ -1884,19 +1900,27 @@ export async function resolveConsumer(
     const record = mapConsumerRow(created.data, starterCredits);
     state.consumers.set(consumerMemoryKey(project.publicId, email), record);
     return record;
-  }, () => resolveMemoryConsumer(project, email, name));
+  }, () => resolveMemoryConsumer(project, email, name, authProvider, authProviderUserId));
 }
 
 function resolveMemoryConsumer(
   project: HuruProjectRecord,
   email: string,
   name?: string,
+  authProvider?: string,
+  authProviderUserId?: string,
 ): HuruConsumerRecord {
   const key = consumerMemoryKey(project.publicId, email);
   const existing = state.consumers.get(key);
   if (existing) {
     if (name && !existing.name) {
       existing.name = name;
+    }
+    if (authProvider && !existing.authProvider) {
+      existing.authProvider = authProvider;
+    }
+    if (authProviderUserId && !existing.authProviderUserId) {
+      existing.authProviderUserId = authProviderUserId;
     }
     return { ...existing };
   }
@@ -1908,6 +1932,8 @@ function resolveMemoryConsumer(
     name,
     creditsBalance: runtimeConfig.consumerStarterCredits,
     createdAt: new Date().toISOString(),
+    authProvider,
+    authProviderUserId,
   };
   state.consumers.set(key, consumer);
   return { ...consumer };
@@ -2420,7 +2446,7 @@ export async function listConsumers(
 
     const result = await supabase
       .from("huru_consumers")
-      .select("id, public_id, project_id, email, name, created_at")
+      .select("id, public_id, project_id, email, name, created_at, auth_provider, auth_provider_user_id")
       .eq("project_id", project.storageId)
       .order("created_at", { ascending: false });
 
@@ -2473,7 +2499,7 @@ export async function getConsumer(
 
     const result = await supabase
       .from("huru_consumers")
-      .select("id, public_id, project_id, email, name, created_at")
+      .select("id, public_id, project_id, email, name, created_at, auth_provider, auth_provider_user_id")
       .eq("project_id", project.storageId)
       .eq("public_id", consumerId)
       .maybeSingle<ConsumerRow>();

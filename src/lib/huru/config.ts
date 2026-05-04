@@ -27,6 +27,9 @@ export const runtimeConfig = {
     Number.parseInt(process.env.HURU_RATE_LIMIT_PER_MINUTE || "60", 10) || 60,
   rateLimitPerDay:
     Number.parseInt(process.env.HURU_RATE_LIMIT_PER_DAY || "1000", 10) || 1000,
+  consumerTokenSecret:
+    process.env.HURU_CONSUMER_TOKEN_SECRET?.trim() ||
+    "dev-consumer-token-secret-change-me",
   consumerStarterCredits:
     Number.parseInt(process.env.HURU_CONSUMER_STARTER_CREDITS || "10", 10) || 10,
 };

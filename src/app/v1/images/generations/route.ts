@@ -5,27 +5,23 @@ import {
 	jsonErrorWithHeaders,
 } from "@/lib/huru/errors";
 import {
-	getBearerToken,
-	getConsumerEmail,
-	getConsumerName,
 	getIdempotencyKey,
 	makeRequestId,
 } from "@/lib/huru/http";
 import { createQuickCheckoutUrl } from "@/lib/huru/paystack";
 import { checkRateLimit } from "@/lib/huru/rate-limit";
+import { isAuthError, resolveRequestAuth } from "@/lib/huru/resolve-auth";
 import {
 	estimateImageCredits,
 	runImageGeneration,
 } from "@/lib/huru/runtime";
 import {
-	authenticateProject,
 	checkIdempotencyKey,
 	failRequest,
 	finalizeRequest,
 	IdempotencyConflictError,
 	preReserveConsumerCredits,
 	releaseConsumerReservedCredits,
-	resolveConsumer,
 	saveRequest,
 	settleConsumerCredits,
 } from "@/lib/huru/store";
@@ -34,16 +30,11 @@ const VALID_SIZES = new Set(["512x512", "1024x1024", "1792x1024"]);
 const MAX_PROMPT_LENGTH = 4000;
 
 export async function POST(request: NextRequest) {
-	const token = getBearerToken(request);
-	const project = await authenticateProject(token);
-	if (!project) {
-		return jsonError(
-			401,
-			"authentication_error",
-			"invalid_api_key",
-			"Invalid API key.",
-		);
+	const authResult = await resolveRequestAuth(request);
+	if (isAuthError(authResult)) {
+		return authResult;
 	}
+	const { project, consumer } = authResult;
 
 	const rateLimit = checkRateLimit(project.publicId);
 	if (!rateLimit.allowed) {
@@ -151,23 +142,6 @@ export async function POST(request: NextRequest) {
 	}
 
 	const responseFormat = payload.response_format ?? "url";
-
-	const consumerEmail = getConsumerEmail(request);
-	if (!consumerEmail) {
-		return jsonError(
-			400,
-			"invalid_request",
-			"missing_consumer",
-			"X-Consumer-Email header is required. Each API call must be tied to a paying user.",
-		);
-	}
-
-	const consumerName = getConsumerName(request);
-	const consumer = await resolveConsumer(
-		project,
-		consumerEmail,
-		consumerName ?? undefined,
-	);
 
 	const requestId = makeRequestId();
 	const estimatedCredits = estimateImageCredits(n, size);

@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   title: "Huru — AI inference on 0G",
   description:
     "Use 0G's decentralized compute through a simple API. Keys, credits, and verification — no wallets required.",
-  metadataBase: new URL("http://localhost:3000"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
   openGraph: {
     title: "Huru — AI inference on 0G",
     description:

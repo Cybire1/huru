@@ -59,6 +59,8 @@ export interface HuruConsumerRecord {
   creditsBalance: number;
   storageId?: string;
   createdAt: string;
+  authProvider?: string;
+  authProviderUserId?: string;
 }
 
 export interface HuruCreditPack {
