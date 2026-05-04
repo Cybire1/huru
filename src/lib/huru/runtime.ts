@@ -9,6 +9,25 @@ type ZeroGServiceType = "chatbot" | "speech-to-text" | "text-to-image";
 interface HuruChatMessage {
   role: string;
   content: string;
+  tool_calls?: unknown;
+  tool_call_id?: string;
+}
+
+/**
+ * Strip tool-related messages that upstream providers don't support.
+ * Removes messages with role "tool" and assistant messages containing tool_calls,
+ * keeping only user/assistant/system messages.
+ */
+function sanitizeMessages(messages: HuruChatMessage[]): HuruChatMessage[] {
+  return messages
+    .filter((m) => m.role !== "tool")
+    .map((m) => {
+      if (m.role === "assistant" && m.tool_calls) {
+        const { tool_calls, ...rest } = m;
+        return rest;
+      }
+      return m;
+    });
 }
 
 export interface RuntimeResult {
@@ -400,7 +419,7 @@ class ZeroGRuntimeClient {
           },
           body: JSON.stringify({
             model: metadata.model,
-            messages: payload.messages,
+            messages: sanitizeMessages(payload.messages),
             temperature: 0.7,
             max_tokens: 4096,
           }),
@@ -477,7 +496,7 @@ class ZeroGRuntimeClient {
             },
             body: JSON.stringify({
               model: metadata.model,
-              messages: payload.messages,
+              messages: sanitizeMessages(payload.messages),
               temperature: 0.7,
               max_tokens: 4096,
               stream: true,
