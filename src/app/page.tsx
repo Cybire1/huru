@@ -52,7 +52,7 @@ export default function Home() {
       <HuruHero />
 
       <div className="relative mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-12">
-        <div className="flex flex-col gap-16 pb-12 sm:gap-28 sm:pb-20">
+        <div className="flex flex-col gap-10 pb-10 sm:gap-28 sm:pb-20">
 
           {/* Geometric illustrations */}
           <HuruGeometrySection />

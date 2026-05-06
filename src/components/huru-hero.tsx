@@ -83,7 +83,7 @@ export function HuruHero() {
         {/* Rounded container */}
         <div
           data-hero-container
-          className="relative overflow-hidden rounded-2xl bg-og-surface-2 p-6 sm:rounded-3xl sm:p-10 lg:p-14"
+          className="relative overflow-hidden rounded-2xl bg-og-surface-2 p-5 sm:rounded-3xl sm:p-10 lg:p-14"
         >
           {/* Subtle radial glow */}
           <div className="pointer-events-none absolute top-0 right-0 h-[70%] w-[60%] bg-[radial-gradient(ellipse_at_70%_30%,rgba(120,120,120,0.07)_0%,transparent_70%)]" />
@@ -103,7 +103,7 @@ export function HuruHero() {
                     data-hero-word
                     className="inline-block text-[0.35em] font-semibold tracking-normal text-og-text-3 align-super"
                   >
-                    ai
+                    beta
                   </span>
                 </sup>
               </h1>
@@ -150,7 +150,7 @@ export function HuruHero() {
                 <Link
                   href="/dashboard"
                   data-hero-cta
-                  className="group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full bg-[#0a0a0a] px-7 py-3.5 text-sm font-semibold text-white transition-all duration-300 hover:bg-[#222] hover:scale-[1.02] active:scale-[0.98] dark:bg-white dark:text-[#0a0a0a] dark:hover:bg-neutral-200 sm:text-[15px]"
+                  className="group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full bg-[#0a0a0a] px-5 py-3 text-[13px] font-semibold text-white transition-all duration-300 hover:bg-[#222] hover:scale-[1.02] active:scale-[0.98] dark:bg-white dark:text-[#0a0a0a] dark:hover:bg-neutral-200 sm:px-7 sm:py-3.5 sm:text-[15px]"
                 >
                   <span className="relative z-10 flex items-center gap-2">
                     Get your API key
@@ -161,7 +161,7 @@ export function HuruHero() {
                 <Link
                   href="/docs"
                   data-hero-cta
-                  className="group inline-flex items-center justify-center gap-2 rounded-full border border-og-border bg-og-surface/60 px-6 py-3.5 text-sm font-medium text-og-text backdrop-blur-sm transition-all duration-300 hover:border-og-border-hover hover:bg-og-surface/80 hover:scale-[1.02] active:scale-[0.98] sm:text-[15px]"
+                  className="group inline-flex items-center justify-center gap-2 rounded-full border border-og-border bg-og-surface/60 px-5 py-3 text-[13px] font-medium text-og-text backdrop-blur-sm transition-all duration-300 hover:border-og-border-hover hover:bg-og-surface/80 hover:scale-[1.02] active:scale-[0.98] sm:px-6 sm:py-3.5 sm:text-[15px]"
                 >
                   <DocumentIcon className="h-4 w-4 text-og-text-3 transition-colors group-hover:text-og-text" />
                   Read the docs
@@ -172,19 +172,19 @@ export function HuruHero() {
             {/* ─── Right column: cinematic 3D flame ─── */}
             <div
               data-hero-logo-3d
-              className="relative flex min-h-[380px] items-center justify-center sm:min-h-[480px] lg:min-h-[560px]"
+              className="relative flex min-h-[260px] items-center justify-center sm:min-h-[420px] lg:min-h-[560px]"
               style={{ perspective: "1200px" }}
             >
               {/* Deep ambient glow layers */}
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <div className="absolute h-[500px] w-[500px] rounded-full bg-og-black/[0.03] blur-[120px] animate-[huru-glow-breathe_8s_ease-in-out_infinite] dark:bg-white/[0.04]" />
-                <div className="absolute h-[300px] w-[300px] rounded-full bg-og-black/[0.06] blur-[80px] animate-[huru-glow-breathe_6s_ease-in-out_infinite_1s] dark:bg-white/[0.06]" />
-                <div className="absolute h-[160px] w-[160px] rounded-full bg-og-black/[0.08] blur-[50px] animate-[huru-glow-breathe_4s_ease-in-out_infinite_0.5s] dark:bg-white/[0.08]" />
+                <div className="absolute h-[280px] w-[280px] rounded-full bg-og-black/[0.03] blur-[120px] animate-[huru-glow-breathe_8s_ease-in-out_infinite] dark:bg-white/[0.04] sm:h-[500px] sm:w-[500px]" />
+                <div className="absolute h-[180px] w-[180px] rounded-full bg-og-black/[0.06] blur-[80px] animate-[huru-glow-breathe_6s_ease-in-out_infinite_1s] dark:bg-white/[0.06] sm:h-[300px] sm:w-[300px]" />
+                <div className="absolute h-[100px] w-[100px] rounded-full bg-og-black/[0.08] blur-[50px] animate-[huru-glow-breathe_4s_ease-in-out_infinite_0.5s] dark:bg-white/[0.08] sm:h-[160px] sm:w-[160px]" />
               </div>
 
               {/* Outer orbiting ring — slow */}
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <div className="h-[340px] w-[340px] animate-[spin_30s_linear_infinite] sm:h-[420px] sm:w-[420px] lg:h-[480px] lg:w-[480px]">
+                <div className="h-[220px] w-[220px] animate-[spin_30s_linear_infinite] sm:h-[420px] sm:w-[420px] lg:h-[480px] lg:w-[480px]">
                   {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => (
                     <div key={`o-${deg}`} className="absolute left-1/2 top-1/2" style={{ transform: `rotate(${deg}deg) translateY(-50%)` }}>
                       <div className="h-[3px] w-[3px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-og-black/10 animate-[huru-particle-bloom_3s_ease-in-out_infinite] dark:bg-white/15"
@@ -196,7 +196,7 @@ export function HuruHero() {
 
               {/* Inner orbiting ring — counter-rotate */}
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <div className="h-[220px] w-[220px] animate-[spin_18s_linear_infinite_reverse] sm:h-[280px] sm:w-[280px] lg:h-[320px] lg:w-[320px]">
+                <div className="h-[150px] w-[150px] animate-[spin_18s_linear_infinite_reverse] sm:h-[280px] sm:w-[280px] lg:h-[320px] lg:w-[320px]">
                   {[0, 72, 144, 216, 288].map((deg) => (
                     <div key={`i-${deg}`} className="absolute left-1/2 top-1/2" style={{ transform: `rotate(${deg}deg) translateY(-50%)` }}>
                       <div className="h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-og-black/15 animate-[huru-particle-bloom_2.5s_ease-in-out_infinite] dark:bg-white/20"
@@ -208,7 +208,7 @@ export function HuruHero() {
 
               {/* Horizontal lens flare streak */}
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <div className="h-[1px] w-[280px] bg-gradient-to-r from-transparent via-og-black/10 to-transparent animate-[huru-flare_5s_ease-in-out_infinite] dark:via-white/10 sm:w-[360px] lg:w-[420px]" />
+                <div className="h-[1px] w-[180px] bg-gradient-to-r from-transparent via-og-black/10 to-transparent animate-[huru-flare_5s_ease-in-out_infinite] dark:via-white/10 sm:w-[360px] lg:w-[420px]" />
               </div>
 
               {/* 3D rotating flame body */}
@@ -223,7 +223,7 @@ export function HuruHero() {
                   viewBox="0 0 32 40"
                   fill="none"
                   aria-hidden="true"
-                  className="h-64 w-auto sm:h-80 lg:h-[22rem]"
+                  className="h-44 w-auto sm:h-80 lg:h-[22rem]"
                   style={{ transformStyle: "preserve-3d", filter: "drop-shadow(0 0 60px rgba(0,0,0,0.12))" }}
                 >
                   {/* Facet 1 — top left (darkest shadow side) */}

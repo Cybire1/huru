@@ -216,16 +216,16 @@ export function HuruMotionPanels() {
 
   return (
     <section ref={sectionRef}>
-      <div data-section-heading className="mb-8 text-center sm:mb-10">
+      <div data-section-heading className="mb-6 text-center sm:mb-10">
         <p className="overflow-hidden">
           <span
             data-heading-word
-            className="inline-block text-xs font-semibold uppercase tracking-[0.2em] text-og-text-3"
+            className="inline-block text-[10px] font-semibold uppercase tracking-[0.2em] text-og-text-3 sm:text-xs"
           >
             Why Huru
           </span>
         </p>
-        <h2 className="mt-3 text-2xl font-bold tracking-tight text-og-black sm:text-3xl lg:text-4xl">
+        <h2 className="mt-2 text-xl font-bold tracking-tight text-og-black sm:mt-3 sm:text-3xl lg:text-4xl">
           <span className="overflow-hidden inline-block">
             <span data-heading-word className="inline-block">
               Built
@@ -260,13 +260,13 @@ export function HuruMotionPanels() {
         </h2>
       </div>
 
-      <div className="grid gap-2.5 sm:gap-3 lg:grid-cols-3">
+      <div className="grid gap-2 sm:gap-3 lg:grid-cols-3">
         {features.map((card, i) => (
           <article
             key={card.title}
             data-motion-card
             onMouseMove={handleMouseMove}
-            className={`group relative overflow-hidden rounded-2xl border border-og-border bg-og-surface p-6 transition-all duration-500 hover:border-og-border-hover sm:p-8 ${card.span}`}
+            className={`group relative overflow-hidden rounded-xl border border-og-border bg-og-surface p-4 transition-all duration-500 hover:border-og-border-hover sm:rounded-2xl sm:p-8 ${card.span}`}
             style={
               {
                 "--spot-x": "50%",
@@ -281,7 +281,7 @@ export function HuruMotionPanels() {
             <div className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-500 group-hover:opacity-100 shadow-[inset_0_0_0_1px_rgba(120,120,120,0.15),0_0_20px_rgba(120,120,120,0.04)]" />
 
             {/* Top row: label + index */}
-            <div className="relative flex items-center justify-between mb-6">
+            <div className="relative flex items-center justify-between mb-4 sm:mb-6">
               <span className="inline-flex items-center gap-1.5 font-mono text-[10px] font-medium uppercase tracking-[0.15em] text-og-text-3">
                 <span className="inline-block h-1 w-1 rounded-full bg-current opacity-40" />
                 {card.label}
@@ -297,21 +297,21 @@ export function HuruMotionPanels() {
             {/* Icon */}
             <div
               data-card-icon
-              className="relative mb-5 flex h-12 w-12 items-center justify-center rounded-xl border border-og-border bg-og-surface-2 text-og-text-2 transition-all duration-500 group-hover:border-og-black group-hover:bg-og-black group-hover:text-white group-hover:shadow-[0_0_20px_rgba(0,0,0,0.12)]"
+              className="relative mb-4 flex h-9 w-9 items-center justify-center rounded-lg border border-og-border bg-og-surface-2 text-og-text-2 transition-all duration-500 group-hover:border-og-black group-hover:bg-og-black group-hover:text-white group-hover:shadow-[0_0_20px_rgba(0,0,0,0.12)] sm:mb-5 sm:h-12 sm:w-12 sm:rounded-xl [&_svg]:h-4 [&_svg]:w-4 sm:[&_svg]:h-6 sm:[&_svg]:w-6"
             >
               {card.icon}
             </div>
 
             {/* Content */}
-            <h3 className="text-lg font-semibold tracking-[-0.01em] text-og-black sm:text-xl">
+            <h3 className="text-base font-semibold tracking-[-0.01em] text-og-black sm:text-xl">
               {card.title}
             </h3>
-            <p className="mt-2.5 max-w-md text-sm leading-relaxed text-og-text-2 sm:text-[15px] sm:leading-relaxed">
+            <p className="mt-1.5 max-w-md text-[13px] leading-relaxed text-og-text-2 sm:mt-2.5 sm:text-[15px] sm:leading-relaxed">
               {card.body}
             </p>
 
             {/* Hover arrow */}
-            <div className="mt-5 flex items-center gap-1.5 text-xs font-medium text-og-text-3 opacity-0 transition-all duration-500 translate-x-[-4px] group-hover:opacity-100 group-hover:translate-x-0">
+            <div className="mt-3 flex items-center gap-1.5 text-xs font-medium text-og-text-3 opacity-0 transition-all duration-500 translate-x-[-4px] group-hover:opacity-100 group-hover:translate-x-0 sm:mt-5">
               <span>Learn more</span>
               <svg
                 width="14"

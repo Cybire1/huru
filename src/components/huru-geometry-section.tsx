@@ -654,11 +654,11 @@ export function HuruGeometrySection() {
 
   return (
     <section ref={sectionRef}>
-      <div className="mb-8 text-center sm:mb-12">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-og-text-3">
+      <div className="mb-6 text-center sm:mb-12">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-og-text-3 sm:text-xs">
           How it works
         </p>
-        <h2 className="mt-3 text-2xl font-bold tracking-tight text-og-black">
+        <h2 className="mt-2 text-xl font-bold tracking-tight text-og-black sm:mt-3 sm:text-2xl">
           Infrastructure you don&apos;t have to think about
         </h2>
       </div>
@@ -668,7 +668,7 @@ export function HuruGeometrySection() {
           <div
             key={col.fig}
             data-geo-col
-            className={`flex flex-col items-center px-6 py-8 sm:px-8 sm:py-10 ${
+            className={`flex flex-col items-center px-3 py-6 sm:px-8 sm:py-10 ${
               i > 0
                 ? "border-t border-og-border lg:border-t-0 lg:border-l"
                 : ""
@@ -678,7 +678,7 @@ export function HuruGeometrySection() {
               {col.fig}
             </span>
 
-            <div className="my-6 w-full max-w-[320px]">
+            <div className="my-4 w-full max-w-[220px] sm:my-6 sm:max-w-[320px]">
               <col.Illustration />
             </div>
 

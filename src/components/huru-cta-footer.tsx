@@ -78,7 +78,7 @@ export function HuruCtaBanner() {
 
   return (
     <section ref={sectionRef} className="border-t border-og-border">
-      <div className="mx-auto max-w-3xl px-4 py-16 text-center sm:py-24">
+      <div className="mx-auto max-w-3xl px-5 py-10 text-center sm:py-24">
         {/* Label */}
         <p
           data-cta-fade
@@ -90,7 +90,7 @@ export function HuruCtaBanner() {
         {/* Heading */}
         <h2
           data-cta-fade
-          className="mt-4 text-3xl font-bold tracking-tight text-og-black sm:text-4xl lg:text-5xl"
+          className="mt-3 text-2xl font-bold tracking-tight text-og-black sm:mt-4 sm:text-4xl lg:text-5xl"
         >
           Start building with Huru today
         </h2>
@@ -98,7 +98,7 @@ export function HuruCtaBanner() {
         {/* Subtitle */}
         <p
           data-cta-fade
-          className="mx-auto mt-4 max-w-lg text-base text-og-text-2 sm:text-lg"
+          className="mx-auto mt-3 max-w-lg text-sm text-og-text-2 sm:mt-4 sm:text-lg"
         >
           Get your API key in seconds. 10 free credits, no credit card required.
         </p>
@@ -108,7 +108,7 @@ export function HuruCtaBanner() {
           <Link
             href="/dashboard"
             data-cta-fade
-            className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-full bg-[#0a0a0a] px-7 py-3.5 text-sm font-semibold text-white shadow-[0_4px_16px_rgba(0,0,0,0.15)] transition-all duration-300 hover:bg-[#222] hover:shadow-[0_6px_24px_rgba(0,0,0,0.2)] hover:scale-[1.02] active:scale-[0.98] dark:bg-white dark:text-[#0a0a0a] dark:hover:bg-neutral-200 sm:w-auto sm:text-[15px]"
+            className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-full bg-[#0a0a0a] px-5 py-3 text-[13px] font-semibold text-white shadow-[0_4px_16px_rgba(0,0,0,0.15)] transition-all duration-300 hover:bg-[#222] hover:shadow-[0_6px_24px_rgba(0,0,0,0.2)] hover:scale-[1.02] active:scale-[0.98] dark:bg-white dark:text-[#0a0a0a] dark:hover:bg-neutral-200 sm:w-auto sm:px-7 sm:py-3.5 sm:text-[15px]"
           >
             <span className="relative z-10 flex items-center gap-2">
               Get your API key
@@ -120,7 +120,7 @@ export function HuruCtaBanner() {
           <Link
             href="/docs"
             data-cta-fade
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-og-border bg-og-surface/80 px-6 py-3.5 text-sm font-medium text-og-black shadow-[0_2px_8px_rgba(0,0,0,0.04)] backdrop-blur-sm transition-all duration-300 hover:border-og-border-hover hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] hover:scale-[1.02] active:scale-[0.98] sm:w-auto sm:text-[15px]"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-og-border bg-og-surface/80 px-5 py-3 text-[13px] font-medium text-og-black shadow-[0_2px_8px_rgba(0,0,0,0.04)] backdrop-blur-sm transition-all duration-300 hover:border-og-border-hover hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] hover:scale-[1.02] active:scale-[0.98] sm:w-auto sm:px-6 sm:py-3.5 sm:text-[15px]"
           >
             Read the docs
           </Link>

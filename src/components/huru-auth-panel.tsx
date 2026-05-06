@@ -1290,6 +1290,7 @@ print(data["choices"][0]["message"]["content"])`;
             <Link href="/" className="flex shrink-0 items-center gap-2">
               <HuruLogo className="size-5 text-og-black sm:size-6" />
               <span className="text-[13px] font-semibold text-og-black sm:text-sm">Huru</span>
+              <span className="rounded-full bg-og-black/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-og-text-2 dark:bg-white/10">Beta</span>
             </Link>
             {selectedProject && (
               <>
