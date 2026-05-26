@@ -1,197 +1,133 @@
 "use client";
 
-import { useRef } from "react";
+import React from "react";
 import Link from "next/link";
-import gsap from "gsap";
-import ScrollTrigger from "gsap/ScrollTrigger";
-import { useGSAP } from "@gsap/react";
+import { Icon } from "./huru-icons";
 
-gsap.registerPlugin(ScrollTrigger);
+const CURRENCIES: Record<string, { sym: string; rate: number; code: string }> = {
+  NGN: { sym: "\u20A6", rate: 1400, code: "NGN" },
+  USD: { sym: "$", rate: 1, code: "USD" },
+};
 
-/* ─── Check icon ─── */
-
-function CheckIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <path d="M20 6L9 17l-5-5" />
-    </svg>
-  );
-}
-
-/* ─── Plan data ─── */
-
-interface Plan {
-  name: string;
-  popular?: boolean;
-  price: string;
-  subtitle: string;
-  features: string[];
-  cta: string;
-  ctaStyle: "outline" | "solid";
-  highlighted?: boolean;
-}
-
-const plans: Plan[] = [
+const PLANS = [
   {
-    name: "Free",
-    price: "$0",
-    subtitle: "to get started",
+    name: "Starter",
+    italic: "starter",
+    usd: 0.36,
+    credits: "100",
+    blurb: "Try it out. A few conversations.",
     features: [
-      "10 free credits on signup",
-      "All models included",
-      "TEE verification",
-      "Community support",
+      "100 credits \u00B7 ~0.1M tokens",
+      "All endpoints, all models",
+      "Test + live keys",
+      "TEE-verified inference",
     ],
-    cta: "Get started",
-    ctaStyle: "outline",
+    cta: "Start free",
   },
   {
     name: "Builder",
-    popular: true,
-    price: "From $10",
-    subtitle: "100 credits",
+    italic: "builder",
+    usd: 1.80,
+    credits: "1,400",
+    blurb: "Solo devs and small teams shipping.",
     features: [
-      "Everything in Free",
-      "Priority routing",
-      "Usage dashboard",
-      "Email support",
+      "Everything in Starter",
+      "1.4M tokens",
+      "Consumer billing API",
+      "Email support \u00B7 24h",
     ],
-    cta: "Buy credits",
-    ctaStyle: "solid",
-    highlighted: true,
+    cta: "Get Builder",
+    popular: true,
   },
   {
-    name: "Pilot",
-    price: "From $100",
-    subtitle: "1,400 credits",
+    name: "Growth",
+    italic: "growth",
+    usd: 8.98,
+    credits: "5,000",
+    blurb: "Teams in production running real volume.",
     features: [
       "Everything in Builder",
-      "Volume discounts",
-      "Dedicated support",
-      "Custom rate limits",
+      "5M tokens",
+      "Priority routing",
+      "Usage exports (CSV / JSON)",
     ],
-    cta: "Buy credits",
-    ctaStyle: "outline",
+    cta: "Get Growth",
+  },
+  {
+    name: "Scale",
+    italic: "scale",
+    usd: 89.81,
+    credits: "25,000",
+    blurb: "High-volume API and business use.",
+    features: [
+      "Everything in Growth",
+      "25M tokens",
+      "Dedicated TEE pools",
+      "Slack support \u00B7 4h",
+      "99.9% SLA",
+    ],
+    cta: "Talk to sales",
   },
 ];
 
-/* ─── Main section component ─── */
+function fmtPrice(usd: number, cur: string) {
+  const c = CURRENCIES[cur];
+  const v = usd * c.rate;
+  if (cur === "NGN") return c.sym + Math.round(v).toLocaleString();
+  return c.sym + v.toFixed(2);
+}
 
 export function HuruPricing() {
-  const sectionRef = useRef<HTMLElement>(null);
-
-  useGSAP(
-    () => {
-      if (!sectionRef.current) return;
-      const scope = sectionRef.current;
-
-      // Cards stagger fade-up on scroll
-      const cards = gsap.utils.toArray<HTMLElement>(
-        "[data-pricing-card]",
-        scope,
-      );
-      gsap.fromTo(
-        cards,
-        { y: 48, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          ease: "power3.out",
-          duration: 0.8,
-          stagger: 0.12,
-          scrollTrigger: {
-            trigger: scope,
-            start: "top 85%",
-            once: true,
-          },
-        },
-      );
-    },
-    { scope: sectionRef },
-  );
-
+  const [cur, setCur] = React.useState("USD");
   return (
-    <section ref={sectionRef}>
-      {/* Section heading */}
-      <div className="mb-8 text-center sm:mb-12">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-og-text-3">
-          Pricing
-        </p>
-        <h2 className="mt-3 text-2xl font-bold tracking-tight text-og-black sm:text-3xl lg:text-4xl">
-          Simple, credit-based pricing
-        </h2>
-        <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-og-text-2 sm:text-[15px]">
-          No subscriptions. Buy credits, use them when you want. Start free.
-        </p>
-      </div>
+    <section className="section" id="pricing">
+      <div className="container">
+        <div className="eyebrow-row">
+          <span className="idx">05 ·</span>
+          <b>Pricing</b>
+          <span>credits never expire</span>
+        </div>
 
-      {/* Pricing cards */}
-      <div className="grid gap-3 lg:grid-cols-3">
-        {plans.map((plan) => (
-          <div
-            key={plan.name}
-            data-pricing-card
-            className={`rounded-2xl border bg-og-surface p-6 sm:p-8 transition-all ${
-              plan.highlighted
-                ? "border-og-border-hover shadow-[0_8px_30px_rgba(0,0,0,0.08)] lg:scale-[1.02]"
-                : "border-og-border"
-            }`}
-          >
-            {/* Plan name + popular badge */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-og-black">
-                {plan.name}
-              </span>
-              {plan.popular && (
-                <span className="inline-flex items-center rounded-full bg-[#0a0a0a] px-2.5 py-0.5 text-[11px] font-medium text-white dark:bg-white dark:text-[#0a0a0a]">
-                  Popular
-                </span>
-              )}
-            </div>
-
-            {/* Price */}
-            <div className="mt-4">
-              <span className="text-4xl font-bold text-og-black">
-                {plan.price}
-              </span>
-            </div>
-
-            {/* Subtitle */}
-            <p className="mt-1 text-sm text-og-text-2">{plan.subtitle}</p>
-
-            {/* Features */}
-            <ul className="mt-6 flex flex-col gap-3">
-              {plan.features.map((feature) => (
-                <li key={feature} className="flex items-center gap-2.5">
-                  <CheckIcon className="h-4 w-4 shrink-0 text-og-text-3" />
-                  <span className="text-sm text-og-text-2">{feature}</span>
-                </li>
-              ))}
-            </ul>
-
-            {/* CTA */}
-            <Link
-              href="/dashboard"
-              className={`mt-8 block w-full text-center rounded-full px-6 py-3 text-sm font-semibold transition-all ${
-                plan.ctaStyle === "solid"
-                  ? "bg-[#0a0a0a] text-white hover:bg-[#222] dark:bg-white dark:text-[#0a0a0a] dark:hover:bg-neutral-200"
-                  : "border border-og-border text-og-black hover:border-og-border-hover hover:bg-og-surface-2"
-              }`}
-            >
-              {plan.cta}
-            </Link>
+        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 32, flexWrap: "wrap" }}>
+          <div className="display" style={{ maxWidth: "14ch" }}>
+            Pay for what you <em>ship.</em>
           </div>
-        ))}
+          <div className="currency-row">
+            {Object.keys(CURRENCIES).map((k) => (
+              <button key={k} onClick={() => setCur(k)} className={cur === k ? "active" : ""}>
+                {k}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="pricing-rail">
+          {PLANS.map((p, i) => (
+            <div key={i} className={`plan ${p.popular ? "popular" : ""}`}>
+              <div className="lbl">
+                <b>{String(i + 1).padStart(2, "0")} · {p.name}</b>
+                {p.popular && <span className="pop">Popular</span>}
+              </div>
+              <div className="name">For <em>{p.italic}s</em></div>
+              <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 14, lineHeight: 1.5 }}>{p.blurb}</p>
+              <div className="price">{fmtPrice(p.usd, cur)}<small>one-time</small></div>
+              <div className="credits">
+                <b>{p.credits}</b> credits · <span style={{ color: "var(--ink-3)" }}>&asymp; {(parseInt(p.credits.replace(/,/g, "")) * 1000).toLocaleString()} tokens</span>
+              </div>
+              <ul>
+                {p.features.map((f, j) => <li key={j}>{f}</li>)}
+              </ul>
+              <Link href="/dashboard" className={p.popular ? "btn btn-primary" : "btn btn-ghost"}>
+                {p.cta}
+                <span className="btn-arrow"><Icon.Arrow width={12} height={12} /></span>
+              </Link>
+            </div>
+          ))}
+        </div>
+
+        <p style={{ marginTop: 28, fontSize: 13, color: "var(--ink-3)", textAlign: "center", fontFamily: "var(--font-mono)" }}>
+          Need more than Scale? <a style={{ color: "var(--acc)", textDecoration: "underline", textUnderlineOffset: 3 }} href="#contact">Talk to us</a> about volume pricing.
+        </p>
       </div>
     </section>
   );

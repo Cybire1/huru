@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getCacheStats } from "@/lib/huru/cache";
 import { runtimeConfig } from "@/lib/huru/config";
 import { getProjectSnapshot } from "@/lib/huru/store";
 
@@ -18,5 +19,6 @@ export async function GET() {
       paystack: Boolean(runtimeConfig.paystackSecretKey),
       zero_g: Boolean(runtimeConfig.zeroGPrivateKey),
     },
+    cache: getCacheStats(),
   });
 }

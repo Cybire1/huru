@@ -146,9 +146,8 @@ export async function POST(request: NextRequest) {
 	const requestId = makeRequestId();
 	const estimatedCredits = estimateImageCredits(n, size);
 
-	if (
-		!(await preReserveConsumerCredits(consumer, estimatedCredits, requestId))
-	) {
+	const reserveResult = await preReserveConsumerCredits(consumer, estimatedCredits, requestId);
+	if (!reserveResult.ok) {
 		const checkoutUrl = await createQuickCheckoutUrl(project, consumer).catch(
 			() => "",
 		);
@@ -156,8 +155,12 @@ export async function POST(request: NextRequest) {
 			402,
 			"billing_error",
 			"insufficient_credits",
-			"Consumer does not have enough credits.",
-			checkoutUrl ? { checkout_url: checkoutUrl } : {},
+			`Insufficient credits: ${reserveResult.balance} available, ${reserveResult.needed} needed.`,
+			{
+				credits_balance: reserveResult.balance,
+				credits_needed: reserveResult.needed,
+				...(checkoutUrl ? { checkout_url: checkoutUrl } : {}),
+			},
 		);
 	}
 

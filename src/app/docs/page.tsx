@@ -537,14 +537,14 @@ export default function DocsPage() {
               <P>Create a Paystack checkout pre-filled with the consumer{"'"}s email.</P>
               <div className="rounded-lg border border-og-border bg-og-surface px-4">
                 <Param name="pack_id" type="string" required>
-                  One of <IC>credits_10</IC>, <IC>credits_25</IC>, <IC>credits_100</IC>.
+                  One of <IC>pack_100</IC>, <IC>pack_300</IC>, <IC>pack_1400</IC>, <IC>pack_5000</IC>, <IC>pack_25000</IC>.
                 </Param>
               </div>
               <Code title="Example" lang="curl">
 {`curl -X POST ${BASE}/v1/consumers/con_abc123/checkout \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
-  -d '{ "pack_id": "credits_10" }'`}
+  -d '{ "pack_id": "pack_100" }'`}
               </Code>
               <Res status={201}>
 {`{

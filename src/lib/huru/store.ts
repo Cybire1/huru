@@ -1939,11 +1939,13 @@ function resolveMemoryConsumer(
   return { ...consumer };
 }
 
+export type PreReserveResult = { ok: true } | { ok: false; balance: number; needed: number };
+
 export async function preReserveConsumerCredits(
   consumer: HuruConsumerRecord,
   estimate: number,
   requestId: string,
-): Promise<boolean> {
+): Promise<PreReserveResult> {
   return runWithStoreFallback(async () => {
     if (estimate <= 0 || !consumer.storageId) {
       return memoryPreReserveConsumer(consumer, requestId, estimate);
@@ -1961,14 +1963,14 @@ export async function preReserveConsumerCredits(
       .maybeSingle<{ id: string; balance_credits: number | string; reserved_credits: number | string }>();
 
     if (accountResult.error || !accountResult.data) {
-      return false;
+      return { ok: false, balance: 0, needed: estimate };
     }
 
     const balance = asNumber(accountResult.data.balance_credits) ?? 0;
     const currentReserved = asNumber(accountResult.data.reserved_credits) ?? 0;
 
     if (balance - currentReserved < estimate) {
-      return false;
+      return { ok: false, balance: balance - currentReserved, needed: estimate };
     }
 
     const nextReserved = currentReserved + estimate;
@@ -1984,10 +1986,10 @@ export async function preReserveConsumerCredits(
       .maybeSingle();
 
     if (updated.error || !updated.data) {
-      return false;
+      return { ok: false, balance: balance - currentReserved, needed: estimate };
     }
 
-    return true;
+    return { ok: true };
   }, () => memoryPreReserveConsumer(consumer, requestId, estimate));
 }
 
@@ -1995,21 +1997,22 @@ function memoryPreReserveConsumer(
   consumer: HuruConsumerRecord,
   requestId: string,
   amount: number,
-): boolean {
+): PreReserveResult {
   if (amount <= 0) {
-    return true;
+    return { ok: true };
   }
 
   const totalReserved = Array.from(state.consumerReservedCredits.entries())
     .filter(([key]) => key.startsWith(`${consumer.id}:`))
     .reduce((sum, [, v]) => sum + v, 0);
 
-  if (consumer.creditsBalance - totalReserved < amount) {
-    return false;
+  const available = consumer.creditsBalance - totalReserved;
+  if (available < amount) {
+    return { ok: false, balance: available, needed: amount };
   }
 
   state.consumerReservedCredits.set(`${consumer.id}:${requestId}`, amount);
-  return true;
+  return { ok: true };
 }
 
 export async function settleConsumerCredits(

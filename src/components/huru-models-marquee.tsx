@@ -1,141 +1,62 @@
 "use client";
 
-import { useRef } from "react";
-import gsap from "gsap";
-import ScrollTrigger from "gsap/ScrollTrigger";
-import { useGSAP } from "@gsap/react";
-
-gsap.registerPlugin(ScrollTrigger);
-
-/* ─── Model data ─── */
-
-interface ModelCard {
-  name: string;
-  category: "Chat" | "Code" | "Vision" | "Speech" | "Image";
-}
-
-const row1Models: ModelCard[] = [
-  { name: "Meta Llama 3.1 70B", category: "Chat" },
-  { name: "Mistral Large", category: "Chat" },
-  { name: "DeepSeek V3", category: "Code" },
-  { name: "Qwen 2.5 72B", category: "Chat" },
-  { name: "Nous Hermes", category: "Chat" },
-  { name: "Command R+", category: "Chat" },
-  { name: "Gemma 2 27B", category: "Chat" },
-  { name: "Yi 1.5 34B", category: "Chat" },
+const MODELS = [
+  { name: "llama-3.3-70b", kind: "chat", ctx: "128k", lat: 184, status: "live" },
+  { name: "llama-3.1-405b", kind: "chat", ctx: "128k", lat: 218, status: "live" },
+  { name: "qwen2.5-coder-32b", kind: "chat", ctx: "128k", lat: 142, status: "live" },
+  { name: "deepseek-r1", kind: "chat", ctx: "64k", lat: 198, status: "live" },
+  { name: "mistral-large-2411", kind: "chat", ctx: "128k", lat: 173, status: "live" },
+  { name: "gemma-3-27b", kind: "chat", ctx: "32k", lat: 158, status: "live" },
+  { name: "phi-4-medium", kind: "chat", ctx: "16k", lat: 96, status: "live" },
+  { name: "command-r-plus", kind: "chat", ctx: "128k", lat: 211, status: "live" },
+  { name: "llama-3.2-vision", kind: "chat", ctx: "128k", lat: 240, status: "live" },
+  { name: "flux-1.1-pro", kind: "image", ctx: "\u2014", lat: 1840, status: "live" },
+  { name: "flux-schnell", kind: "image", ctx: "\u2014", lat: 920, status: "live" },
+  { name: "stable-diffusion-3.5", kind: "image", ctx: "\u2014", lat: 2104, status: "live" },
+  { name: "sd-xl-turbo", kind: "image", ctx: "\u2014", lat: 480, status: "live" },
 ];
 
-const row2Models: ModelCard[] = [
-  { name: "Whisper Large V3", category: "Speech" },
-  { name: "SDXL Turbo", category: "Image" },
-  { name: "Llama 3.1 8B", category: "Chat" },
-  { name: "Phi-3 Medium", category: "Code" },
-  { name: "CodeLlama 34B", category: "Code" },
-  { name: "Mixtral 8x7B", category: "Chat" },
-  { name: "StableLM 2", category: "Chat" },
-  { name: "Llama Guard 3", category: "Vision" },
-];
-
-/* ─── Model pill component ─── */
-
-function ModelPill({ model }: { model: ModelCard }) {
+export function HuruDepartures() {
   return (
-    <div className="inline-flex shrink-0 items-center gap-2.5 rounded-xl border border-og-border bg-og-surface px-5 py-3">
-      <span className="text-sm font-medium text-og-black whitespace-nowrap">
-        {model.name}
-      </span>
-      <span className="rounded-full bg-og-surface-2 px-2 py-0.5 text-[10px] uppercase tracking-wider text-og-text-3 whitespace-nowrap">
-        {model.category}
-      </span>
-    </div>
-  );
-}
-
-/* ─── Marquee row ─── */
-
-function MarqueeRow({
-  models,
-  reverse,
-}: {
-  models: ModelCard[];
-  reverse?: boolean;
-}) {
-  // Duplicate content so the loop is seamless
-  const items = [...models, ...models];
-
-  return (
-    <div className="overflow-hidden">
-      <div
-        className="animate-huru-marquee flex gap-4"
-        style={{
-          width: "max-content",
-          animationDuration: "30s",
-          animationDirection: reverse ? "reverse" : "normal",
-        }}
-      >
-        {items.map((model, i) => (
-          <ModelPill key={`${model.name}-${i}`} model={model} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ─── Main section component ─── */
-
-export function HuruModelsMarquee() {
-  const sectionRef = useRef<HTMLElement>(null);
-
-  useGSAP(
-    () => {
-      if (!sectionRef.current) return;
-      const scope = sectionRef.current;
-
-      // Entire section fades up on scroll
-      gsap.fromTo(
-        scope.querySelector("[data-marquee-content]"),
-        { y: 40, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          duration: 0.8,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: scope,
-            start: "top 85%",
-            once: true,
-          },
-        },
-      );
-    },
-    { scope: sectionRef },
-  );
-
-  return (
-    <section ref={sectionRef} className="py-20 sm:py-28">
-      <div data-marquee-content>
-        {/* Section heading */}
-        <div className="mb-10 text-center sm:mb-14">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-og-text-3">
-            Ecosystem
-          </p>
-          <h2 className="mt-3 text-2xl font-bold tracking-tight text-og-black">
-            Access every model in the network
-          </h2>
+    <section className="section" id="models">
+      <div className="container">
+        <div className="eyebrow-row">
+          <span className="idx">04 ·</span>
+          <b>Models</b>
+          <span>{MODELS.length} live</span>
         </div>
 
-        {/* Marquee rows with edge fade */}
-        <div
-          className="flex flex-col gap-4"
-          style={{
-            maskImage:
-              "linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)",
-            WebkitMaskImage:
-              "linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)",
-          }}
-        >
-          <MarqueeRow models={row1Models} />
-          <MarqueeRow models={row2Models} reverse />
+        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 32, flexWrap: "wrap" }}>
+          <div className="display" style={{ maxWidth: "14ch" }}>
+            One key. <em>Every model.</em>
+          </div>
+          <p style={{ color: "var(--ink-2)", maxWidth: "38ch", fontSize: 15 }}>
+            Open-weight and frontier models for chat and image — same bearer
+            auth, same response shape, same proof attached.
+          </p>
+        </div>
+
+        <div className="departures">
+          <div className="dep-head">
+            <span>Kind</span>
+            <span>Model</span>
+            <span>Context</span>
+            <span>Endpoint</span>
+            <span>p50</span>
+            <span>Status</span>
+          </div>
+          {MODELS.map((m, i) => (
+            <div key={i} className="dep-row">
+              <span className={`kind ${m.kind}`}>{m.kind}</span>
+              <span className="name">{m.name}</span>
+              <span>{m.ctx}</span>
+              <span style={{ color: "var(--ink-3)" }}>
+                /v1/{m.kind === "chat" ? "chat/completions" : "images/generations"}
+              </span>
+              <span className="lat">{m.lat}ms</span>
+              <span className="status">{m.status}</span>
+            </div>
+          ))}
         </div>
       </div>
     </section>

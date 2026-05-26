@@ -1,6 +1,7 @@
 import { getSupabaseAdmin } from "@/lib/huru/supabase";
 import { hashValue } from "@/lib/huru/http";
 import { runtimeConfig } from "@/lib/huru/config";
+import { getProjectCacheStats } from "@/lib/huru/cache";
 import type { HuruEnvironment, HuruProjectCreateInput, HuruProjectRecord } from "@/lib/huru/types";
 import { buildUsageSummary } from "@/lib/huru/store";
 import { createCheckoutSession } from "@/lib/huru/paystack";
@@ -887,6 +888,12 @@ export interface HuruDashboardAnalytics {
     currentBalance: number;
     estimatedDaysRemaining: number | null;
   };
+  cache: {
+    hits: number;
+    misses: number;
+    hitRate: number;
+    creditsSaved: number;
+  };
   consumers: Array<{
     email: string;
     name: string | null;
@@ -944,7 +951,7 @@ export async function getDashboardAnalytics(
 
   const requestsResult = await supabase
     .from("huru_requests")
-    .select("id, endpoint, method, model_alias, status, started_at, completed_at, credits_used, consumer_email")
+    .select("id, endpoint, method, model_alias, status, started_at, completed_at, credits_used, consumer_id, huru_consumers(email)")
     .eq("project_id", projectRow.id)
     .gte("started_at", thirtyDaysAgo.toISOString())
     .order("started_at", { ascending: false });
@@ -953,17 +960,22 @@ export async function getDashboardAnalytics(
     throw requestsResult.error;
   }
 
-  const allRequests = (requestsResult.data ?? []) as Array<{
-    id: string;
-    endpoint: string;
-    method: string;
-    model_alias: string | null;
-    status: string;
-    started_at: string;
-    completed_at: string | null;
-    credits_used: number | string | null;
-    consumer_email: string | null;
-  }>;
+  const allRequests = (requestsResult.data ?? []).map((row) => {
+    const r = row as {
+      id: string;
+      endpoint: string;
+      method: string;
+      model_alias: string | null;
+      status: string;
+      started_at: string;
+      completed_at: string | null;
+      credits_used: number | string | null;
+      consumer_id: string | null;
+      huru_consumers: Array<{ email: string }> | { email: string } | null;
+    };
+    const consumer = Array.isArray(r.huru_consumers) ? r.huru_consumers[0] : r.huru_consumers;
+    return { ...r, consumer_email: consumer?.email ?? null };
+  });
 
   // Daily aggregation
   const dailyMap = new Map<string, { requests: number; creditsUsed: number }>();
@@ -1078,6 +1090,7 @@ export async function getDashboardAnalytics(
       currentBalance,
       estimatedDaysRemaining,
     },
+    cache: getProjectCacheStats(projectRow.public_id),
     consumers,
     requests: {
       items: paginatedItems.map((req) => {

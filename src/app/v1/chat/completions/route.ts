@@ -5,6 +5,14 @@ import {
 	jsonErrorWithHeaders,
 } from "@/lib/huru/errors";
 import {
+	SSEAccumulator,
+	buildCacheKey,
+	getCachedResponse,
+	replayCachedAsStream,
+	setCachedResponse,
+	shouldBypassCache,
+} from "@/lib/huru/cache";
+import {
 	getIdempotencyKey,
 	makeRequestId,
 } from "@/lib/huru/http";
@@ -39,6 +47,7 @@ async function handleStreamingChat(
 		model: string;
 		messages: Array<{ role: string; content: string }>;
 	},
+	cacheKey: string | null,
 ) {
 	const doRelease = () =>
 		releaseConsumerReservedCredits(consumer, requestId, reservedAmount);
@@ -67,6 +76,8 @@ async function handleStreamingChat(
 	}
 
 	const encoder = new TextEncoder();
+	const decoder = new TextDecoder();
+	const accumulator = cacheKey ? new SSEAccumulator() : null;
 	let settled = false;
 
 	const outputStream = new ReadableStream<Uint8Array>({
@@ -93,11 +104,37 @@ async function handleStreamingChat(
 						break;
 					}
 					controller.enqueue(value);
+					accumulator?.push(value, decoder);
 				}
 
 				const { usage, verification } = await streamResult.onComplete();
 				settled = true;
 				await doSettle(usage.creditsUsed);
+
+				// Populate cache with assembled response
+				const assembled = accumulator?.result();
+				if (cacheKey && assembled) {
+					setCachedResponse(cacheKey, {
+						body: {
+							id: `chatcmpl-${requestId}`,
+							object: "chat.completion",
+							created: Math.floor(Date.now() / 1000),
+							model: payload.model,
+							choices: [
+								{
+									index: 0,
+									message: { role: "assistant", content: assembled },
+									finish_reason: "stop",
+								},
+							],
+						},
+						model: payload.model,
+						creditsUsed: usage.creditsUsed,
+						verified: verification.verified,
+						verificationMode: verification.verificationMode,
+						provider: verification.provider,
+					});
+				}
 
 				const huruMeta = {
 					huru: {
@@ -153,6 +190,7 @@ async function handleStreamingChat(
 			"Cache-Control": "no-cache",
 			Connection: "keep-alive",
 			"x-request-id": requestId,
+			"x-cache": "MISS",
 		},
 	});
 }
@@ -219,6 +257,7 @@ export async function POST(request: NextRequest) {
 		model?: string;
 		messages?: Array<{ role: string; content: string }>;
 		stream?: boolean;
+		max_tokens?: number;
 	} | null;
 
 	if (!payload?.model || payload.model !== "huru/chat-1") {
@@ -239,12 +278,67 @@ export async function POST(request: NextRequest) {
 		);
 	}
 
-	const requestId = makeRequestId();
-	const estimatedCredits = estimateChatCredits(payload.messages);
+	// ── Cache lookup (before credit reserve — hits cost 0 credits) ──
+	const bypassCache = shouldBypassCache(
+		request.headers.get("cache-control"),
+	);
+	const cacheKey = bypassCache
+		? null
+		: buildCacheKey(
+				project.publicId,
+				payload.model,
+				payload.messages,
+				undefined,
+				payload.max_tokens,
+			);
 
-	if (
-		!(await preReserveConsumerCredits(consumer, estimatedCredits, requestId))
-	) {
+	if (cacheKey) {
+		const cached = getCachedResponse(cacheKey, project.publicId);
+		if (cached) {
+			const requestId = makeRequestId();
+			if (payload.stream) {
+				return new Response(
+					replayCachedAsStream(cached, requestId),
+					{
+						headers: {
+							"Content-Type": "text/event-stream",
+							"Cache-Control": "no-cache",
+							Connection: "keep-alive",
+							"x-request-id": requestId,
+							"x-cache": "HIT",
+							...rateLimit.headers,
+						},
+					},
+				);
+			}
+			return NextResponse.json(
+				{
+					...cached.body,
+					huru: {
+						request_id: requestId,
+						credits_used: 0,
+						verified: cached.verified,
+						verification_mode: cached.verificationMode,
+						provider: cached.provider,
+						cached: true,
+					},
+				},
+				{
+					headers: {
+						"x-request-id": requestId,
+						"x-cache": "HIT",
+						...rateLimit.headers,
+					},
+				},
+			);
+		}
+	}
+
+	const requestId = makeRequestId();
+	const estimatedCredits = estimateChatCredits(payload.messages, payload.max_tokens);
+
+	const reserveResult = await preReserveConsumerCredits(consumer, estimatedCredits, requestId);
+	if (!reserveResult.ok) {
 		const checkoutUrl = await createQuickCheckoutUrl(project, consumer).catch(
 			() => "",
 		);
@@ -252,8 +346,12 @@ export async function POST(request: NextRequest) {
 			402,
 			"billing_error",
 			"insufficient_credits",
-			"Consumer does not have enough credits.",
-			checkoutUrl ? { checkout_url: checkoutUrl } : {},
+			`Insufficient credits: ${reserveResult.balance} available, ${reserveResult.needed} needed.`,
+			{
+				credits_balance: reserveResult.balance,
+				credits_needed: reserveResult.needed,
+				...(checkoutUrl ? { checkout_url: checkoutUrl } : {}),
+			},
 		);
 	}
 
@@ -296,6 +394,7 @@ export async function POST(request: NextRequest) {
 				model: payload.model,
 				messages: payload.messages,
 			},
+			cacheKey,
 		);
 	}
 
@@ -319,6 +418,18 @@ export async function POST(request: NextRequest) {
 			result.body,
 		);
 
+		// Populate cache after successful response
+		if (cacheKey) {
+			setCachedResponse(cacheKey, {
+				body: result.body,
+				model: payload.model,
+				creditsUsed: result.usage.creditsUsed,
+				verified: result.verification.verified,
+				verificationMode: result.verification.verificationMode,
+				provider: result.verification.provider,
+			});
+		}
+
 		return NextResponse.json(
 			{
 				...result.body,
@@ -333,6 +444,7 @@ export async function POST(request: NextRequest) {
 			{
 				headers: {
 					"x-request-id": requestId,
+					"x-cache": "MISS",
 					...rateLimit.headers,
 				},
 			},

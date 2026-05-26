@@ -33,42 +33,42 @@ export function UsageLineChart({ data }: { data: DailyDataPoint[] }) {
 				<AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
 					<defs>
 						<linearGradient id="creditsGradient" x1="0" y1="0" x2="0" y2="1">
-							<stop offset="5%" stopColor="#0a0a0a" stopOpacity={0.15} />
-							<stop offset="95%" stopColor="#0a0a0a" stopOpacity={0} />
+							<stop offset="5%" stopColor="#FF7A18" stopOpacity={0.25} />
+							<stop offset="95%" stopColor="#FF7A18" stopOpacity={0} />
 						</linearGradient>
 						<linearGradient id="requestsGradient" x1="0" y1="0" x2="0" y2="1">
-							<stop offset="5%" stopColor="#6366f1" stopOpacity={0.15} />
-							<stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+							<stop offset="5%" stopColor="#9FE2C8" stopOpacity={0.2} />
+							<stop offset="95%" stopColor="#9FE2C8" stopOpacity={0} />
 						</linearGradient>
 					</defs>
-					<CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" vertical={false} />
+					<CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.07)" vertical={false} />
 					<XAxis
 						dataKey="date"
-						tick={{ fontSize: 11, fill: "#737373" }}
+						tick={{ fontSize: 11, fill: "rgba(255,255,255,0.35)" }}
 						tickLine={false}
 						axisLine={false}
 						tickFormatter={(v: string) => v.slice(5)}
 					/>
 					<YAxis
-						tick={{ fontSize: 11, fill: "#737373" }}
+						tick={{ fontSize: 11, fill: "rgba(255,255,255,0.35)" }}
 						tickLine={false}
 						axisLine={false}
 						width={40}
 					/>
 					<Tooltip
 						contentStyle={{
-							background: "#1a1a1a",
-							border: "none",
+							background: "#16121F",
+							border: "1px solid rgba(255,255,255,0.07)",
 							borderRadius: "8px",
 							fontSize: "12px",
-							color: "#fff",
+							color: "#F5F1E8",
 						}}
-						labelStyle={{ color: "#a3a3a3" }}
+						labelStyle={{ color: "rgba(255,255,255,0.4)" }}
 					/>
 					<Area
 						type="monotone"
 						dataKey="creditsUsed"
-						stroke="#0a0a0a"
+						stroke="#FF7A18"
 						strokeWidth={2}
 						fill="url(#creditsGradient)"
 						name="Credits"
@@ -76,7 +76,7 @@ export function UsageLineChart({ data }: { data: DailyDataPoint[] }) {
 					<Area
 						type="monotone"
 						dataKey="requests"
-						stroke="#6366f1"
+						stroke="#9FE2C8"
 						strokeWidth={1.5}
 						fill="url(#requestsGradient)"
 						name="Requests"
@@ -99,29 +99,29 @@ export function EndpointBarChart({ data }: { data: EndpointDataPoint[] }) {
 		<div className="h-[180px] w-full">
 			<ResponsiveContainer width="100%" height="100%">
 				<BarChart data={formatted} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-					<CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" vertical={false} />
+					<CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.07)" vertical={false} />
 					<XAxis
 						dataKey="label"
-						tick={{ fontSize: 11, fill: "#737373" }}
+						tick={{ fontSize: 11, fill: "rgba(255,255,255,0.35)" }}
 						tickLine={false}
 						axisLine={false}
 					/>
 					<YAxis
-						tick={{ fontSize: 11, fill: "#737373" }}
+						tick={{ fontSize: 11, fill: "rgba(255,255,255,0.35)" }}
 						tickLine={false}
 						axisLine={false}
 						width={40}
 					/>
 					<Tooltip
 						contentStyle={{
-							background: "#1a1a1a",
-							border: "none",
+							background: "#16121F",
+							border: "1px solid rgba(255,255,255,0.07)",
 							borderRadius: "8px",
 							fontSize: "12px",
-							color: "#fff",
+							color: "#F5F1E8",
 						}}
 					/>
-					<Bar dataKey="requests" fill="#0a0a0a" radius={[4, 4, 0, 0]} name="Requests" />
+					<Bar dataKey="requests" fill="#FF7A18" radius={[4, 4, 0, 0]} name="Requests" />
 				</BarChart>
 			</ResponsiveContainer>
 		</div>
@@ -129,7 +129,7 @@ export function EndpointBarChart({ data }: { data: EndpointDataPoint[] }) {
 }
 
 export function VerificationBadge({ rate }: { rate: number }) {
-	const color = rate >= 90 ? "text-emerald-600" : rate >= 50 ? "text-amber-600" : "text-red-500";
+	const color = rate >= 90 ? "text-ok" : rate >= 50 ? "text-warn" : "text-err";
 	return (
 		<span className={`font-mono text-2xl font-semibold ${color}`}>
 			{rate.toFixed(1)}%
@@ -151,21 +151,21 @@ export function BurnRateCard({
 	return (
 		<div className="grid grid-cols-3 gap-4">
 			<div>
-				<p className="text-xs text-og-text-3">Avg/day</p>
-				<p className="mt-1 font-mono text-lg font-semibold text-og-black">{avgDailyCredits}</p>
-				<p className="text-[11px] text-og-text-3">credits</p>
+				<p className="text-xs" style={{ color: "var(--ink-3)" }}>Avg/day</p>
+				<p className="mt-1 font-mono text-lg font-semibold" style={{ color: "var(--ink)" }}>{avgDailyCredits}</p>
+				<p className="text-[11px]" style={{ color: "var(--ink-3)" }}>credits</p>
 			</div>
 			<div>
-				<p className="text-xs text-og-text-3">Balance</p>
-				<p className="mt-1 font-mono text-lg font-semibold text-og-black">{currentBalance}</p>
-				<p className="text-[11px] text-og-text-3">credits</p>
+				<p className="text-xs" style={{ color: "var(--ink-3)" }}>Balance</p>
+				<p className="mt-1 font-mono text-lg font-semibold" style={{ color: "var(--ink)" }}>{currentBalance}</p>
+				<p className="text-[11px]" style={{ color: "var(--ink-3)" }}>credits</p>
 			</div>
 			<div>
-				<p className="text-xs text-og-text-3">Runway</p>
-				<p className={`mt-1 font-mono text-lg font-semibold ${urgent ? "text-red-500" : "text-og-black"}`}>
+				<p className="text-xs" style={{ color: "var(--ink-3)" }}>Runway</p>
+				<p className={`mt-1 font-mono text-lg font-semibold`} style={{ color: urgent ? "var(--err)" : "var(--ink)" }}>
 					{estimatedDaysRemaining !== null ? `${estimatedDaysRemaining}d` : "\u221E"}
 				</p>
-				<p className="text-[11px] text-og-text-3">remaining</p>
+				<p className="text-[11px]" style={{ color: "var(--ink-3)" }}>remaining</p>
 			</div>
 		</div>
 	);

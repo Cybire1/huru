@@ -130,12 +130,13 @@ export function estimateCredits(totalTokens: number): number {
 
 export function estimateChatCredits(
   messages: HuruChatMessage[],
-  maxTokens = 4096,
+  maxTokens?: number,
 ): number {
   const inputTokens = estimateTokens(
     messages.map((m) => m.content).join("\n"),
   );
-  return estimateCredits(inputTokens + maxTokens);
+  const cappedMax = Math.min(maxTokens ?? 1024, 4096);
+  return estimateCredits(inputTokens + cappedMax);
 }
 
 export function estimateTranscriptionCredits(file: File): number {

@@ -31,42 +31,48 @@ export const runtimeConfig = {
     process.env.HURU_CONSUMER_TOKEN_SECRET?.trim() ||
     "dev-consumer-token-secret-change-me",
   consumerStarterCredits:
-    Number.parseInt(process.env.HURU_CONSUMER_STARTER_CREDITS || "10", 10) || 10,
+    Number.parseInt(process.env.HURU_CONSUMER_STARTER_CREDITS || "100", 10) || 100,
+  cacheEnabled:
+    (process.env.HURU_CACHE_ENABLED?.trim().toLowerCase() ?? "true") !== "false",
+  cacheTtlMs:
+    (Number.parseInt(process.env.HURU_CACHE_TTL_SECONDS || "300", 10) || 300) * 1000,
+  cacheMaxEntries:
+    Number.parseInt(process.env.HURU_CACHE_MAX_ENTRIES || "200", 10) || 200,
 };
 
 export const creditPacks: HuruCreditPack[] = [
   {
-    packId: "credits_10",
+    packId: "pack_100",
     name: "Starter Top-Up",
-    amountMinor: 1000,
+    amountMinor: 5100,
     currency: runtimeConfig.defaultCurrency,
     creditsAwarded: 100,
   },
   {
-    packId: "credits_25",
+    packId: "pack_300",
     name: "Builder Top-Up",
-    amountMinor: 2500,
+    amountMinor: 15100,
     currency: runtimeConfig.defaultCurrency,
     creditsAwarded: 300,
   },
   {
-    packId: "credits_100",
+    packId: "pack_1400",
     name: "Pilot Top-Up",
-    amountMinor: 10000,
+    amountMinor: 70500,
     currency: runtimeConfig.defaultCurrency,
     creditsAwarded: 1400,
   },
   {
-    packId: "credits_300",
+    packId: "pack_5000",
     name: "Growth Top-Up",
-    amountMinor: 30000,
+    amountMinor: 251500,
     currency: runtimeConfig.defaultCurrency,
     creditsAwarded: 5000,
   },
   {
-    packId: "credits_1000",
+    packId: "pack_25000",
     name: "Scale Top-Up",
-    amountMinor: 100000,
+    amountMinor: 1257400,
     currency: runtimeConfig.defaultCurrency,
     creditsAwarded: 25000,
   },
