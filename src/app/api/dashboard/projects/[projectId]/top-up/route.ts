@@ -28,13 +28,21 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 
   const { projectId } = await context.params;
-  const session = await createDashboardTopUpCheckout(
-    token,
-    projectId,
-    payload.packId,
-    payload.successUrl,
-    payload.cancelUrl,
-  );
+
+  let session;
+  try {
+    session = await createDashboardTopUpCheckout(
+      token,
+      projectId,
+      payload.packId,
+      payload.successUrl,
+      payload.cancelUrl,
+    );
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Checkout failed.";
+    console.error("[top-up]", message);
+    return jsonError(500, "server_error", "checkout_failed", message);
+  }
 
   if (!session) {
     return jsonError(404, "invalid_request", "project_not_found", "Project not found.");

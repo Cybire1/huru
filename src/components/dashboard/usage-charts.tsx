@@ -28,7 +28,7 @@ export function UsageLineChart({ data }: { data: DailyDataPoint[] }) {
 	if (data.length === 0) return null;
 
 	return (
-		<div className="h-[220px] w-full">
+		<div className="h-[220px] w-full" style={{ minHeight: 220, minWidth: 0 }}>
 			<ResponsiveContainer width="100%" height="100%">
 				<AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
 					<defs>
@@ -96,7 +96,7 @@ export function EndpointBarChart({ data }: { data: EndpointDataPoint[] }) {
 	}));
 
 	return (
-		<div className="h-[180px] w-full">
+		<div className="h-[180px] w-full" style={{ minHeight: 180, minWidth: 0 }}>
 			<ResponsiveContainer width="100%" height="100%">
 				<BarChart data={formatted} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
 					<CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.07)" vertical={false} />
