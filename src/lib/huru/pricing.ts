@@ -1,4 +1,7 @@
 import { creditPacks } from "@/lib/huru/config";
+import { getModelTierDescriptors } from "@/lib/huru/model-tiers";
+
+export { getModelMultiplier, getModelTier } from "@/lib/huru/model-tiers";
 
 export interface PricingRate {
 	endpoint: string;
@@ -50,6 +53,7 @@ export function getPricingResponse() {
 			unit: rate.unit,
 			credits_per_unit: rate.creditsPerUnit,
 		})),
+		model_tiers: getModelTierDescriptors(),
 		credit_packs: creditPacks.map((pack) => ({
 			pack_id: pack.packId,
 			name: pack.name,

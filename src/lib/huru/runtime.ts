@@ -1,6 +1,7 @@
 import { createZGComputeNetworkBroker } from "@0glabs/0g-serving-broker";
 import { ethers } from "ethers";
 import { runtimeConfig } from "@/lib/huru/config";
+import { getModelMultiplier } from "@/lib/huru/model-tiers";
 import type { HuruUsageRecord, HuruVerificationRecord } from "@/lib/huru/types";
 
 type Broker = Awaited<ReturnType<typeof createZGComputeNetworkBroker>>;
@@ -124,19 +125,21 @@ export function estimateTokens(text: string): number {
   return Math.max(1, Math.ceil(normalized.length / 4));
 }
 
-export function estimateCredits(totalTokens: number): number {
-  return Math.max(1, Math.ceil(totalTokens / 1000));
+export function estimateCredits(totalTokens: number, model?: string): number {
+  const multiplier = getModelMultiplier(model);
+  return Math.max(1, Math.ceil((totalTokens / 1000) * multiplier));
 }
 
 export function estimateChatCredits(
   messages: HuruChatMessage[],
   maxTokens?: number,
+  model?: string,
 ): number {
   const inputTokens = estimateTokens(
     messages.map((m) => m.content).join("\n"),
   );
   const cappedMax = Math.min(maxTokens ?? 1024, 4096);
-  return estimateCredits(inputTokens + cappedMax);
+  return estimateCredits(inputTokens + cappedMax, model);
 }
 
 export function estimateTranscriptionCredits(file: File): number {
@@ -177,6 +180,7 @@ export function buildVerification(
 function normalizeChatUsage(
   response: ZeroGChatResponse,
   messages: HuruChatMessage[],
+  model?: string,
 ): HuruUsageRecord {
   const fallbackPrompt = estimateTokens(
     messages.map((message) => message.content).join("\n"),
@@ -197,7 +201,7 @@ function normalizeChatUsage(
     promptTokens,
     completionTokens,
     totalTokens,
-    creditsUsed: estimateCredits(totalTokens),
+    creditsUsed: estimateCredits(totalTokens, model),
   };
 }
 
@@ -458,7 +462,7 @@ class ZeroGRuntimeClient {
           model: payload.model,
           provider_model: metadata.model,
         },
-        usage: normalizeChatUsage(data, payload.messages),
+        usage: normalizeChatUsage(data, payload.messages, payload.model),
         verification: buildVerification(
           provider.provider,
           provider.verifiability,
@@ -616,7 +620,7 @@ class ZeroGRuntimeClient {
                 promptTokens,
                 completionTokens,
                 totalTokens,
-                creditsUsed: estimateCredits(totalTokens),
+                creditsUsed: estimateCredits(totalTokens, payload.model),
               },
               verification: buildVerification(
                 providerAddress,

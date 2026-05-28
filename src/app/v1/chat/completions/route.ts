@@ -335,7 +335,7 @@ export async function POST(request: NextRequest) {
 	}
 
 	const requestId = makeRequestId();
-	const estimatedCredits = estimateChatCredits(payload.messages, payload.max_tokens);
+	const estimatedCredits = estimateChatCredits(payload.messages, payload.max_tokens, payload.model);
 
 	const reserveResult = await preReserveConsumerCredits(consumer, estimatedCredits, requestId);
 	if (!reserveResult.ok) {
