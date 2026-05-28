@@ -12,6 +12,8 @@ import {
 	estimateStorageDownloadCredits,
 	downloadFile,
 } from "@/lib/huru/storage";
+import { DecryptionError, decryptIfEncrypted } from "@/lib/huru/encryption";
+import { getConsumerEncryptionKey } from "@/lib/huru/wallet-manager";
 import {
 	failRequest,
 	finalizeRequest,
@@ -99,6 +101,31 @@ export async function GET(
 	try {
 		const data = await downloadFile(rootHash);
 
+		const consumerKey = await getConsumerEncryptionKey(consumer).catch(() => null);
+		let plaintext: Buffer;
+		let encryptionMode: string;
+		try {
+			const result = decryptIfEncrypted(data, consumerKey);
+			plaintext = result.plaintext;
+			encryptionMode = result.mode;
+		} catch (error) {
+			await doRelease();
+			await failRequest(
+				requestId,
+				"decryption_error",
+				error instanceof Error ? error.message : String(error),
+			);
+			if (error instanceof DecryptionError) {
+				return jsonError(
+					403,
+					"permission_error",
+					"decryption_failed",
+					"This file is encrypted and cannot be decrypted with your key. It may belong to a different consumer.",
+				);
+			}
+			throw error;
+		}
+
 		const creditsUsed = estimateStorageDownloadCredits();
 		await doSettle(creditsUsed);
 
@@ -118,16 +145,18 @@ export async function GET(
 			{
 				object: "storage.download",
 				root_hash: rootHash,
-				size: data.length,
+				size: plaintext.length,
+				encryption: encryptionMode,
 			},
 		);
 
-		return new Response(new Uint8Array(data), {
+		return new Response(new Uint8Array(plaintext), {
 			headers: {
 				"Content-Type": "application/octet-stream",
-				"Content-Length": String(data.length),
+				"Content-Length": String(plaintext.length),
 				"x-request-id": requestId,
 				"x-root-hash": rootHash,
+				"x-huru-encryption": encryptionMode,
 				...rateLimit.headers,
 			},
 		});

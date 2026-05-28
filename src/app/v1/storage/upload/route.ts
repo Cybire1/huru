@@ -13,7 +13,16 @@ import {
 	estimateStorageUploadCredits,
 	uploadFile,
 } from "@/lib/huru/storage";
-import { getStorageWalletForConsumer } from "@/lib/huru/wallet-manager";
+import {
+	encryptManaged,
+	isValidEncryptionMode,
+	wrapClient,
+	type EncryptionMode,
+} from "@/lib/huru/encryption";
+import {
+	getConsumerEncryptionKey,
+	getStorageWalletForConsumer,
+} from "@/lib/huru/wallet-manager";
 import {
 	failRequest,
 	finalizeRequest,
@@ -72,6 +81,17 @@ export async function POST(request: NextRequest) {
 		);
 	}
 
+	const encryptionHeader = (request.headers.get("X-Huru-Encryption") || "managed").toLowerCase();
+	if (!isValidEncryptionMode(encryptionHeader)) {
+		return jsonError(
+			400,
+			"invalid_request",
+			"invalid_encryption_mode",
+			"X-Huru-Encryption must be one of: managed, none, client.",
+		);
+	}
+	const encryptionMode: EncryptionMode = encryptionHeader;
+
 	const requestId = makeRequestId();
 	const estimatedCredits = estimateStorageUploadCredits(file.size);
 
@@ -118,18 +138,32 @@ export async function POST(request: NextRequest) {
 
 	try {
 		const arrayBuffer = await file.arrayBuffer();
-		const buffer = Buffer.from(arrayBuffer);
-		const wallet = await getStorageWalletForConsumer(consumer);
-		const result = await uploadFile(buffer, wallet);
+		const plaintext = Buffer.from(arrayBuffer);
+		const plaintextSize = plaintext.length;
 
-		const creditsUsed = estimateStorageUploadCredits(result.size);
+		let payload: Buffer;
+		if (encryptionMode === "managed") {
+			const consumerKey = await getConsumerEncryptionKey(consumer);
+			payload = encryptManaged(plaintext, consumerKey);
+		} else if (encryptionMode === "client") {
+			payload = wrapClient(plaintext);
+		} else {
+			payload = plaintext;
+		}
+
+		const wallet = await getStorageWalletForConsumer(consumer);
+		const result = await uploadFile(payload, wallet);
+
+		// Bill on plaintext size — the envelope overhead is Huru's concern, not the user's.
+		const creditsUsed = estimateStorageUploadCredits(plaintextSize);
 		await doSettle(creditsUsed);
 
 		const responseBody = {
 			object: "storage.upload" as const,
 			root_hash: result.rootHash,
 			tx_hash: result.txHash,
-			size: result.size,
+			size: plaintextSize,
+			encryption: encryptionMode,
 		};
 
 		await finalizeRequest(
@@ -159,6 +193,7 @@ export async function POST(request: NextRequest) {
 			{
 				headers: {
 					"x-request-id": requestId,
+					"x-huru-encryption": encryptionMode,
 					...rateLimit.headers,
 				},
 			},

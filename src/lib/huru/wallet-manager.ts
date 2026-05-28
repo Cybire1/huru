@@ -1,3 +1,4 @@
+import { hkdfSync } from "node:crypto";
 import { ethers } from "ethers";
 import { runtimeConfig } from "@/lib/huru/config";
 import { getSupabaseAdmin, hasSupabaseAdminConfig } from "@/lib/huru/supabase";
@@ -6,6 +7,11 @@ import type { HuruConsumerRecord } from "@/lib/huru/types";
 // HD derivation path: BIP-44 Ethereum coin type, account 0, external chain.
 // Consumer derivation_index becomes the address index.
 const HD_PATH_PREFIX = "m/44'/60'/0'/0/";
+// Separate HD chain (1) for encryption material so it can't leak signing keys.
+const HD_ENC_PATH_PREFIX = "m/44'/60'/0'/1/";
+
+const ENCRYPTION_INFO = Buffer.from("huru:encryption:v1", "utf8");
+const ENCRYPTION_SALT_FALLBACK = Buffer.from("huru:encryption:fallback:v1", "utf8");
 
 const zeroGRpcByNetwork = {
 	mainnet: "https://evmrpc.0g.ai",
@@ -254,4 +260,40 @@ export async function getConsumerWalletAddress(
 		.maybeSingle<{ address: string }>();
 
 	return result.data?.address ?? null;
+}
+
+/**
+ * Derive a 32-byte symmetric encryption key for a consumer.
+ *
+ * - HD setup available: HKDF off the consumer's encryption-chain HD child key
+ *   (chain 1, isolated from signing keys on chain 0).
+ * - Fallback: HKDF off ZERO_G_PRIVATE_KEY with consumer.id as salt — every
+ *   consumer still gets a unique-ish KEK even without the master mnemonic.
+ *
+ * Used by storage envelope encryption (see encryption.ts).
+ */
+export async function getConsumerEncryptionKey(
+	consumer: HuruConsumerRecord,
+): Promise<Buffer> {
+	const master = getMasterNode();
+	if (master && hasSupabaseAdminConfig() && consumer.storageId) {
+		const record = await getOrCreateWalletRow(consumer.storageId);
+		if (record) {
+			const childNode = master.derivePath(`${HD_ENC_PATH_PREFIX}${record.derivationIndex}`);
+			const ikm = Buffer.from(childNode.privateKey.replace(/^0x/, ""), "hex");
+			const arrayBuf = hkdfSync("sha256", ikm, ENCRYPTION_SALT_FALLBACK, ENCRYPTION_INFO, 32);
+			return Buffer.from(arrayBuf);
+		}
+	}
+
+	if (!runtimeConfig.zeroGPrivateKey) {
+		throw new Error(
+			"Encryption requires ZERO_G_PRIVATE_KEY (and optionally HURU_WALLET_MASTER_MNEMONIC).",
+		);
+	}
+
+	const masterIkm = Buffer.from(runtimeConfig.zeroGPrivateKey.replace(/^0x/, ""), "hex");
+	const salt = Buffer.from(consumer.id, "utf8");
+	const arrayBuf = hkdfSync("sha256", masterIkm, salt, ENCRYPTION_INFO, 32);
+	return Buffer.from(arrayBuf);
 }

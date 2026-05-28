@@ -13,6 +13,7 @@ const ALLOWED_HEADERS = [
 	"X-Huru-Api-Key",
 	"X-Consumer-Email",
 	"X-Consumer-Name",
+	"X-Huru-Encryption",
 	"Idempotency-Key",
 	"Cache-Control",
 ].join(", ");
@@ -49,7 +50,7 @@ export function proxy(request: NextRequest) {
 		response.headers.set("Vary", "Origin");
 		response.headers.set(
 			"Access-Control-Expose-Headers",
-			"x-request-id, x-cache, x-root-hash",
+			"x-request-id, x-cache, x-root-hash, x-huru-encryption",
 		);
 	}
 	return response;
