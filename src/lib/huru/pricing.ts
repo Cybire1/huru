@@ -7,24 +7,37 @@ export interface PricingRate {
 	creditsPerUnit: number;
 }
 
+/**
+ * Flat pricing — same credit rate across all models.
+ * 1 credit = 1,000 tokens (chat), 40 credits = 1 image (1024x1024), 2 credits = 10s audio.
+ *
+ * Why flat? Predictability beats theoretical margin. Users see one rate and
+ * trust the number on the dashboard. Premium-model cost variance is absorbed
+ * by routing-layer defaults (Economy models first).
+ */
+
+export const CREDITS_PER_1K_TOKENS = 1;
+export const CREDITS_PER_IMAGE_1024 = 40;
+export const CREDITS_PER_10S_AUDIO = 2;
+
 export const pricingRates: PricingRate[] = [
 	{
 		endpoint: "/v1/chat/completions",
-		model: "huru/chat-1",
+		model: "all chat models",
 		unit: "1K tokens",
-		creditsPerUnit: 1,
+		creditsPerUnit: CREDITS_PER_1K_TOKENS,
 	},
 	{
 		endpoint: "/v1/audio/transcriptions",
 		model: "huru/stt-1",
 		unit: "10 seconds of audio",
-		creditsPerUnit: 2,
+		creditsPerUnit: CREDITS_PER_10S_AUDIO,
 	},
 	{
 		endpoint: "/v1/images/generations",
 		model: "huru/img-1",
 		unit: "1 image (1024x1024)",
-		creditsPerUnit: 10,
+		creditsPerUnit: CREDITS_PER_IMAGE_1024,
 	},
 ];
 

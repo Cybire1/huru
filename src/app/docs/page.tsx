@@ -537,14 +537,14 @@ export default function DocsPage() {
               <P>Create a Paystack checkout pre-filled with the consumer{"'"}s email.</P>
               <div className="rounded-lg border border-og-border bg-og-surface px-4">
                 <Param name="pack_id" type="string" required>
-                  One of <IC>pack_100</IC>, <IC>pack_300</IC>, <IC>pack_1400</IC>, <IC>pack_5000</IC>, <IC>pack_25000</IC>.
+                  One of <IC>pack_starter</IC>, <IC>pack_pro</IC>, <IC>pack_business</IC>, <IC>pack_scale</IC>.
                 </Param>
               </div>
               <Code title="Example" lang="curl">
 {`curl -X POST ${BASE}/v1/consumers/con_abc123/checkout \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
-  -d '{ "pack_id": "pack_100" }'`}
+  -d '{ "pack_id": "pack_starter" }'`}
               </Code>
               <Res status={201}>
 {`{
@@ -552,7 +552,7 @@ export default function DocsPage() {
   "provider": "paystack",
   "reference": "huru_topup_a1b2c3d4e5f6",
   "authorization_url": "https://paystack.com/pay/...",
-  "credits_awarded": 100,
+  "credits_awarded": 1000,
   "status": "pending"
 }`}
               </Res>

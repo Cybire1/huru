@@ -213,10 +213,10 @@ function ResponsePanel({ sample }: { sample: Sample }) {
         {running && <div className="scan-line" />}
         <div style={{ color: "rgba(255,255,255,0.35)" }}>{"{"}</div>
         <div style={{ paddingLeft: 14 }}>
-          <span style={{ color: "rgba(255,255,255,0.35)" }}>&quot;id&quot;</span>: <span style={{ color: "#FFA64D" }}>&quot;{r.id}&quot;</span>,
+          <span style={{ color: "rgba(255,255,255,0.35)" }}>&quot;id&quot;</span>: <span style={{ color: "#C4B5FD" }}>&quot;{r.id}&quot;</span>,
         </div>
         <div style={{ paddingLeft: 14 }}>
-          <span style={{ color: "rgba(255,255,255,0.35)" }}>&quot;model&quot;</span>: <span style={{ color: "#FFA64D" }}>&quot;{r.model}&quot;</span>,
+          <span style={{ color: "rgba(255,255,255,0.35)" }}>&quot;model&quot;</span>: <span style={{ color: "#C4B5FD" }}>&quot;{r.model}&quot;</span>,
         </div>
         <div style={{ paddingLeft: 14 }}>
           <span style={{ color: "rgba(255,255,255,0.35)" }}>&quot;latency_ms&quot;</span>: <span style={{ color: "#9FE2C8", fontWeight: 600 }}>{r.latency_ms}</span>,
@@ -231,10 +231,10 @@ function ResponsePanel({ sample }: { sample: Sample }) {
             : <span style={{ color: "rgba(255,255,255,0.35)" }}>&hellip;</span>},
         </div>
         <div style={{ paddingLeft: 28 }}>
-          <span style={{ color: "rgba(255,255,255,0.35)" }}>&quot;attestation&quot;</span>: <span style={{ color: "#FFA64D" }}>&quot;{r.huru.attestation}&quot;</span>,
+          <span style={{ color: "rgba(255,255,255,0.35)" }}>&quot;attestation&quot;</span>: <span style={{ color: "#C4B5FD" }}>&quot;{r.huru.attestation}&quot;</span>,
         </div>
         <div style={{ paddingLeft: 28 }}>
-          <span style={{ color: "rgba(255,255,255,0.35)" }}>&quot;node&quot;</span>: <span style={{ color: "#FFA64D" }}>&quot;{r.huru.node}&quot;</span>
+          <span style={{ color: "rgba(255,255,255,0.35)" }}>&quot;node&quot;</span>: <span style={{ color: "#C4B5FD" }}>&quot;{r.huru.node}&quot;</span>
         </div>
         <div style={{ paddingLeft: 14, color: "rgba(255,255,255,0.35)" }}>{"},"}</div>
         <div style={{ paddingLeft: 14 }}>

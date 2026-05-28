@@ -153,7 +153,7 @@ const IMAGE_SIZE_MULTIPLIERS: Record<string, number> = {
 
 export function estimateImageCredits(n: number, size: string): number {
   const multiplier = IMAGE_SIZE_MULTIPLIERS[size] ?? 1;
-  return Math.max(1, Math.ceil(10 * n * multiplier));
+  return Math.max(1, Math.ceil(40 * n * multiplier));
 }
 
 export function buildVerification(

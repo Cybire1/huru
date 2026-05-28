@@ -11,13 +11,13 @@ const CURRENCIES: Record<string, { sym: string; rate: number; code: string }> = 
 
 const PLANS = [
   {
-    name: "Starter",
-    italic: "starter",
-    usd: 0.36,
-    credits: "100",
-    blurb: "Try it out. A few conversations.",
+    name: "Free",
+    italic: "explorer",
+    usd: 0,
+    credits: "200",
+    blurb: "Sign up and start building. No card required.",
     features: [
-      "100 credits \u00B7 ~0.1M tokens",
+      "200 credits on signup",
       "All endpoints, all models",
       "Test + live keys",
       "TEE-verified inference",
@@ -25,56 +25,57 @@ const PLANS = [
     cta: "Start free",
   },
   {
-    name: "Builder",
+    name: "Starter",
     italic: "builder",
-    usd: 1.80,
-    credits: "1,400",
-    blurb: "Solo devs and small teams shipping.",
+    usd: 2,
+    credits: "1,000",
+    blurb: "Solo devs shipping their first integration.",
     features: [
-      "Everything in Starter",
-      "1.4M tokens",
+      "1,000 credits \u00B7 ~1M tokens",
+      "All models + image gen",
       "Consumer billing API",
-      "Email support \u00B7 24h",
+      "Email support",
     ],
-    cta: "Get Builder",
+    cta: "Get Starter",
     popular: true,
   },
   {
-    name: "Growth",
-    italic: "growth",
-    usd: 8.98,
+    name: "Pro",
+    italic: "team",
+    usd: 9,
     credits: "5,000",
     blurb: "Teams in production running real volume.",
     features: [
-      "Everything in Builder",
-      "5M tokens",
+      "5,000 credits \u00B7 ~5M tokens",
       "Priority routing",
       "Usage exports (CSV / JSON)",
+      "Email support \u00B7 24h",
     ],
-    cta: "Get Growth",
+    cta: "Get Pro",
   },
   {
     name: "Scale",
-    italic: "scale",
-    usd: 89.81,
-    credits: "25,000",
+    italic: "enterprise",
+    usd: 99,
+    credits: "100,000",
     blurb: "High-volume API and business use.",
     features: [
-      "Everything in Growth",
-      "25M tokens",
+      "100,000 credits \u00B7 ~100M tokens",
       "Dedicated TEE pools",
       "Slack support \u00B7 4h",
       "99.9% SLA",
+      "Volume discounts",
     ],
     cta: "Talk to sales",
   },
 ];
 
 function fmtPrice(usd: number, cur: string) {
+  if (usd === 0) return "Free";
   const c = CURRENCIES[cur];
   const v = usd * c.rate;
   if (cur === "NGN") return c.sym + Math.round(v).toLocaleString();
-  return c.sym + v.toFixed(2);
+  return c.sym + v.toFixed(0);
 }
 
 export function HuruPricing() {
@@ -110,7 +111,7 @@ export function HuruPricing() {
               </div>
               <div className="name">For <em>{p.italic}s</em></div>
               <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 14, lineHeight: 1.5 }}>{p.blurb}</p>
-              <div className="price">{fmtPrice(p.usd, cur)}<small>one-time</small></div>
+              <div className="price">{fmtPrice(p.usd, cur)}<small>{p.usd > 0 ? "one-time" : ""}</small></div>
               <div className="credits">
                 <b>{p.credits}</b> credits · <span style={{ color: "var(--ink-3)" }}>&asymp; {(parseInt(p.credits.replace(/,/g, "")) * 1000).toLocaleString()} tokens</span>
               </div>
@@ -126,7 +127,8 @@ export function HuruPricing() {
         </div>
 
         <p style={{ marginTop: 28, fontSize: 13, color: "var(--ink-3)", textAlign: "center", fontFamily: "var(--font-mono)" }}>
-          Need more than Scale? <a style={{ color: "var(--acc)", textDecoration: "underline", textUnderlineOffset: 3 }} href="#contact">Talk to us</a> about volume pricing.
+          Economy models (DeepSeek v3): 1 credit/1K tokens · Premium models: up to 8x · Images: 40 credits each.{" "}
+          <a style={{ color: "var(--acc)", textDecoration: "underline", textUnderlineOffset: 3 }} href="/docs">Full pricing</a>
         </p>
       </div>
     </section>

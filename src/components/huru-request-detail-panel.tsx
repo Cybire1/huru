@@ -37,7 +37,7 @@ export function HuruRequestDetailPanel({ requestId }: { requestId: string }) {
   useEffect(() => {
     if (!supabase) return;
     let mounted = true;
-    supabase.auth.getSession().then(async ({ data }) => {
+    supabase.auth.getSession().then(async ({ data }: { data: { session?: { access_token?: string } | null } }) => {
       if (!mounted) return;
       if (data.session?.access_token) {
         const res = await fetch(`/api/dashboard/requests/${requestId}`, { headers: { Authorization: `Bearer ${data.session.access_token}` } });
@@ -45,7 +45,7 @@ export function HuruRequestDetailPanel({ requestId }: { requestId: string }) {
       }
       setSessionReady(true);
     });
-    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange(async (_event: string, session: { access_token?: string } | null) => {
       if (!session?.access_token) { setDetail(null); setSessionReady(true); return; }
       const res = await fetch(`/api/dashboard/requests/${requestId}`, { headers: { Authorization: `Bearer ${session.access_token}` } });
       if (res.ok) setDetail((await res.json()) as RequestDetail);

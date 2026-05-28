@@ -171,7 +171,7 @@ export async function createQuickCheckoutUrl(
   const session = await createConsumerCheckoutSession({
     project,
     consumer,
-    packId: packId ?? "pack_100",
+    packId: packId ?? "pack_starter",
   });
   return session.authorization_url;
 }

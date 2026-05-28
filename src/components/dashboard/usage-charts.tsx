@@ -33,8 +33,8 @@ export function UsageLineChart({ data }: { data: DailyDataPoint[] }) {
 				<AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
 					<defs>
 						<linearGradient id="creditsGradient" x1="0" y1="0" x2="0" y2="1">
-							<stop offset="5%" stopColor="#FF7A18" stopOpacity={0.25} />
-							<stop offset="95%" stopColor="#FF7A18" stopOpacity={0} />
+							<stop offset="5%" stopColor="#B59CFF" stopOpacity={0.25} />
+							<stop offset="95%" stopColor="#B59CFF" stopOpacity={0} />
 						</linearGradient>
 						<linearGradient id="requestsGradient" x1="0" y1="0" x2="0" y2="1">
 							<stop offset="5%" stopColor="#9FE2C8" stopOpacity={0.2} />
@@ -68,7 +68,7 @@ export function UsageLineChart({ data }: { data: DailyDataPoint[] }) {
 					<Area
 						type="monotone"
 						dataKey="creditsUsed"
-						stroke="#FF7A18"
+						stroke="#B59CFF"
 						strokeWidth={2}
 						fill="url(#creditsGradient)"
 						name="Credits"
@@ -121,7 +121,7 @@ export function EndpointBarChart({ data }: { data: EndpointDataPoint[] }) {
 							color: "#F5F1E8",
 						}}
 					/>
-					<Bar dataKey="requests" fill="#FF7A18" radius={[4, 4, 0, 0]} name="Requests" />
+					<Bar dataKey="requests" fill="#B59CFF" radius={[4, 4, 0, 0]} name="Requests" />
 				</BarChart>
 			</ResponsiveContainer>
 		</div>

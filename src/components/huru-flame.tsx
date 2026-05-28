@@ -11,7 +11,7 @@ interface HuruFlameProps {
 export function HuruFlame({ size = 440, glow = true, drift = true }: HuruFlameProps) {
   const id = React.useId();
   return (
-    <div className="flame-stage" style={{ width: size, height: size, position: "relative" }}>
+    <div className="flame-stage" style={{ width: size, maxWidth: "100%", height: size, position: "relative" }}>
       {glow && <div className="glow" />}
       <svg
         className="flame"

@@ -137,9 +137,9 @@ export function HuruLogo({ className, style }: DashIconProps) {
     <svg className={className} style={style} viewBox="-100 -110 200 220" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <defs>
         <linearGradient id="huru-logo-g" x1="0" y1="-110" x2="0" y2="110" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="var(--acc-bright, #FFB872)" />
-          <stop offset="60%" stopColor="var(--acc, #FF7A18)" />
-          <stop offset="100%" stopColor="var(--acc-deep, #C44C00)" />
+          <stop offset="0%" stopColor="var(--acc-bright, #E0D2FF)" />
+          <stop offset="60%" stopColor="var(--acc, #B59CFF)" />
+          <stop offset="100%" stopColor="var(--acc-deep, #6A4FE0)" />
         </linearGradient>
       </defs>
       <path d="M 0,-95 L 28,-50 L 58,15 L 38,75 L 0,95 L -38,75 L -58,15 L -28,-50 Z" fill="url(#huru-logo-g)" />

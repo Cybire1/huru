@@ -31,49 +31,68 @@ export const runtimeConfig = {
     process.env.HURU_CONSUMER_TOKEN_SECRET?.trim() ||
     "dev-consumer-token-secret-change-me",
   consumerStarterCredits:
-    Number.parseInt(process.env.HURU_CONSUMER_STARTER_CREDITS || "100", 10) || 100,
+    Number.parseInt(process.env.HURU_CONSUMER_STARTER_CREDITS || "200", 10) || 200,
   cacheEnabled:
     (process.env.HURU_CACHE_ENABLED?.trim().toLowerCase() ?? "true") !== "false",
   cacheTtlMs:
     (Number.parseInt(process.env.HURU_CACHE_TTL_SECONDS || "300", 10) || 300) * 1000,
   cacheMaxEntries:
     Number.parseInt(process.env.HURU_CACHE_MAX_ENTRIES || "200", 10) || 200,
+  storageNodeUrl: process.env.ZERO_G_STORAGE_NODE_URL?.trim() || "",
+  storageIndexerUrl: process.env.ZERO_G_INDEXER_URL?.trim() || "",
+  storageKvUrl: process.env.ZERO_G_KV_URL?.trim() || "",
+  storageFlowContractAddress: process.env.ZERO_G_FLOW_CONTRACT?.trim() || "",
+  storageMaxFileSizeBytes:
+    (Number.parseInt(process.env.HURU_STORAGE_MAX_FILE_SIZE_MB || "10", 10) || 10) * 1024 * 1024,
+  storageCreditsPerTenKb:
+    Number.parseFloat(process.env.HURU_STORAGE_CREDITS_PER_10KB || "1") || 1,
+  // BIP-39 mnemonic for HD-derived per-consumer storage wallets.
+  // When absent, storage falls back to the master ZERO_G_PRIVATE_KEY wallet.
+  walletMasterMnemonic: process.env.HURU_WALLET_MASTER_MNEMONIC?.trim() || "",
+  // Per-consumer wallet gas top-up amount (in A0G). Sent on first use and
+  // when balance falls below walletDripThreshold.
+  walletDripAmount:
+    Number.parseFloat(process.env.HURU_WALLET_DRIP_AMOUNT || "0.01") || 0.01,
+  walletDripThreshold:
+    Number.parseFloat(process.env.HURU_WALLET_DRIP_THRESHOLD || "0.003") || 0.003,
 };
 
+/**
+ * Credit packs — priced at ~3x upstream cost (DeepSeek v3 baseline).
+ *
+ * 1 credit ≈ 1K tokens of Economy compute.
+ * Upstream cost: ~0.48 NGN/credit → sell at ~1.44 NGN/credit (3x).
+ * Amounts are in minor currency units (kobo for NGN: 100 kobo = 1 NGN).
+ *
+ * Volume discount: larger packs get slightly cheaper per-credit.
+ */
 export const creditPacks: HuruCreditPack[] = [
   {
-    packId: "pack_100",
-    name: "Starter Top-Up",
-    amountMinor: 5100,
+    packId: "pack_starter",
+    name: "Starter",
+    amountMinor: 280000,       // 2,800 NGN ≈ $2
     currency: runtimeConfig.defaultCurrency,
-    creditsAwarded: 100,
+    creditsAwarded: 1000,      // 1K credits → ~1M economy tokens
   },
   {
-    packId: "pack_300",
-    name: "Builder Top-Up",
-    amountMinor: 15100,
+    packId: "pack_pro",
+    name: "Pro",
+    amountMinor: 1260000,      // 12,600 NGN ≈ $9
     currency: runtimeConfig.defaultCurrency,
-    creditsAwarded: 300,
+    creditsAwarded: 5000,      // 5K credits → ~5M economy tokens
   },
   {
-    packId: "pack_1400",
-    name: "Pilot Top-Up",
-    amountMinor: 70500,
+    packId: "pack_business",
+    name: "Business",
+    amountMinor: 4900000,      // 49,000 NGN ≈ $35
     currency: runtimeConfig.defaultCurrency,
-    creditsAwarded: 1400,
+    creditsAwarded: 25000,     // 25K credits → ~25M economy tokens
   },
   {
-    packId: "pack_5000",
-    name: "Growth Top-Up",
-    amountMinor: 251500,
+    packId: "pack_scale",
+    name: "Scale",
+    amountMinor: 13860000,     // 138,600 NGN ≈ $99
     currency: runtimeConfig.defaultCurrency,
-    creditsAwarded: 5000,
-  },
-  {
-    packId: "pack_25000",
-    name: "Scale Top-Up",
-    amountMinor: 1257400,
-    currency: runtimeConfig.defaultCurrency,
-    creditsAwarded: 25000,
+    creditsAwarded: 100000,    // 100K credits → ~100M economy tokens
   },
 ];

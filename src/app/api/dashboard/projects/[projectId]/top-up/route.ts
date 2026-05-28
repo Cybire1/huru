@@ -41,7 +41,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   } catch (err) {
     const message = err instanceof Error ? err.message : "Checkout failed.";
     console.error("[top-up]", message);
-    return jsonError(500, "server_error", "checkout_failed", message);
+    return jsonError(500, "internal_error", "checkout_failed", message);
   }
 
   if (!session) {

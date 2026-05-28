@@ -5,8 +5,19 @@ import { verifyCheckoutTransaction } from "@/lib/huru/paystack";
 import { applySuccessfulConsumerCreditPurchase, applySuccessfulCreditPurchase } from "@/lib/huru/store";
 
 function isValidSignature(body: string, signature: string | null) {
+  // Fail closed: production must have a signing key set, or webhooks are rejected.
+  // Dev-only escape hatch: allow when key absent AND running on non-production NODE_ENV.
   if (!runtimeConfig.paystackWebhookSigningKey) {
-    return true;
+    if (process.env.NODE_ENV !== "production") {
+      console.warn(
+        "[paystack-webhook] PAYSTACK_WEBHOOK_SECRET not set — accepting unsigned webhook in non-production env.",
+      );
+      return true;
+    }
+    console.error(
+      "[paystack-webhook] PAYSTACK_WEBHOOK_SECRET not set in production. Webhook rejected.",
+    );
+    return false;
   }
 
   if (!signature) {
