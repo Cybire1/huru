@@ -86,6 +86,12 @@ export function HuruNavbar({
       >
         <HuruLogo className={`transition-all duration-500 text-og-black hover:rotate-[8deg] ${scrolled ? "h-5 w-5" : "h-5 w-5 sm:h-6 sm:w-6"}`} />
         <span className="text-[13px] font-semibold text-og-black sm:text-sm">Huru</span>
+        <span
+          aria-label="Beta"
+          className="hidden rounded-[4px] border border-og-border-hover px-1.5 py-[1px] font-mono text-[9.5px] font-medium uppercase tracking-[0.14em] text-og-text-3 sm:inline-block"
+        >
+          beta
+        </span>
       </Link>
 
       {/* Separator — hidden on very small screens */}
