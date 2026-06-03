@@ -16,6 +16,7 @@
     "@gsap/react": "^2.1.2",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.104.1",
+    "@vercel/analytics": "^2.0.1",
     "ethers": "^6.16.0",
     "gsap": "^3.15.0",
     "jose": "^6.2.3",
