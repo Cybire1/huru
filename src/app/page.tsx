@@ -10,15 +10,17 @@ import { HuruDepartures } from "@/components/huru-models-marquee";
 import { HuruPricing } from "@/components/huru-pricing";
 import { HuruCtaMonument } from "@/components/huru-cta-footer";
 import { HuruFooter } from "@/components/huru-footer";
+import { HuruReveal } from "@/components/huru-reveal";
 
 export default function Home() {
   return (
     <>
       <HuruNavbar />
+      <HuruReveal />
       <HuruHero />
       <HuruTicker />
 
-      <section className="section" id="quickstart">
+      <section className="section" id="quickstart" data-reveal>
         <div className="container">
           <div className="eyebrow-row">
             <span className="idx">01 ·</span>
@@ -32,10 +34,10 @@ export default function Home() {
         </div>
       </section>
 
-      <HuruSequence />
-      <HuruManifesto />
-      <HuruDepartures />
-      <HuruPricing />
+      <div data-reveal><HuruSequence /></div>
+      <div data-reveal><HuruManifesto /></div>
+      <div data-reveal><HuruDepartures /></div>
+      <div data-reveal><HuruPricing /></div>
       <HuruCtaMonument />
       <HuruFooter />
     </>

@@ -2073,3 +2073,623 @@ body::before {
   .dash-grid-2  { grid-template-columns: 1fr; }
   .dash-content { padding: 16px; }
 }
+
+/* ============================================================
+   MOBILE REBUILD — 2026-06
+   Self-contained mobile-first overhaul. Appended last so it
+   reliably overrides earlier @media (max-width: 880px) rules
+   without touching the desktop editorial design.
+   ============================================================ */
+
+/* Show/hide helpers for navbar (drawer trigger only on small) */
+.nav-only-desktop { display: inline-flex; }
+.hm-trigger { display: none; }
+
+@media (max-width: 880px) {
+  .nav-only-desktop { display: none !important; }
+  .hm-trigger { display: inline-flex; }
+
+  /* Tighter nav bar on mobile so the drawer trigger sits flush */
+  .nav-bar { padding: 14px var(--page-pad); }
+  .nav-brand { font-size: 15px; }
+  .nav-brand .beta-pill { display: none; }
+}
+
+/* ---------- Drawer trigger (the bars) ---------- */
+.hm-trigger {
+  width: 42px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--surface) 80%, transparent);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
+}
+.hm-trigger:active { transform: scale(0.94); }
+.hm-trigger:hover { background: var(--surface); border-color: var(--line-2); }
+.hm-bars {
+  position: relative;
+  width: 18px;
+  height: 12px;
+  display: block;
+}
+.hm-bars i {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1.4px;
+  background: var(--ink);
+  border-radius: 1px;
+  transition: transform 260ms cubic-bezier(0.4, 0, 0.2, 1), opacity 180ms ease;
+}
+.hm-bars i:nth-child(1) { top: 0; }
+.hm-bars i:nth-child(2) { top: 50%; transform: translateY(-50%); }
+.hm-bars i:nth-child(3) { bottom: 0; }
+.hm-trigger.is-open .hm-bars i:nth-child(1) { transform: translateY(5px) rotate(45deg); }
+.hm-trigger.is-open .hm-bars i:nth-child(2) { opacity: 0; transform: translateX(-8px); }
+.hm-trigger.is-open .hm-bars i:nth-child(3) { transform: translateY(-5px) rotate(-45deg); }
+
+/* ---------- Drawer overlay ---------- */
+.hm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-8px);
+  transition: opacity 220ms ease, transform 320ms cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 0 var(--page-pad);
+  overflow-y: auto;
+}
+.hm-overlay.is-open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.hm-grain {
+  position: absolute; inset: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  opacity: 0.12;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+.hm-bg {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 50% at 110% 20%, var(--acc-tint-2), transparent 70%),
+    radial-gradient(ellipse 60% 40% at -10% 90%, var(--acc-tint), transparent 75%);
+}
+
+.hm-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 0 28px;
+  z-index: 1;
+}
+.hm-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  font: 500 11px/1 var(--font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.hm-eyebrow .hm-acc { color: var(--acc); }
+.hm-pulse {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--acc);
+  box-shadow: 0 0 0 4px var(--acc-tint), 0 0 12px var(--acc-glow);
+  animation: hm-pulse 2.2s ease-in-out infinite;
+}
+@keyframes hm-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px var(--acc-tint), 0 0 12px var(--acc-glow); }
+  50%      { box-shadow: 0 0 0 7px transparent, 0 0 24px var(--acc-glow); }
+}
+.hm-close {
+  font: 500 12px/1 var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+}
+.hm-close:hover { color: var(--ink); border-color: var(--line-2); }
+
+/* ---------- Drawer nav list ---------- */
+.hm-nav {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  margin-top: 8px;
+  border-top: 1px solid var(--line);
+}
+.hm-item {
+  --i: 0;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-rows: auto auto;
+  column-gap: 14px;
+  align-items: center;
+  padding: 24px 4px 22px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  opacity: 0;
+  transform: translateY(14px);
+  transition: background 200ms ease, color 200ms ease;
+}
+.hm-overlay.is-open .hm-item {
+  animation: hm-item-in 520ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+  animation-delay: calc(60ms + var(--i) * 55ms);
+}
+@keyframes hm-item-in {
+  to { opacity: 1; transform: translateY(0); }
+}
+.hm-item:active { background: var(--surface); }
+.hm-item .hm-num {
+  grid-row: 1 / 3;
+  font: 500 11px/1 var(--font-mono);
+  letter-spacing: 0.14em;
+  color: var(--acc);
+  align-self: start;
+  margin-top: 8px;
+  width: 22px;
+}
+.hm-item .hm-label {
+  font-family: var(--font-display);
+  font-style: normal;
+  font-weight: 400;
+  font-size: clamp(1.85rem, 8.5vw, 2.6rem);
+  line-height: 1;
+  letter-spacing: -0.025em;
+  color: var(--ink);
+}
+.hm-item .hm-caption {
+  grid-column: 2;
+  margin-top: 6px;
+  font: 500 12.5px/1.3 var(--font-mono);
+  color: var(--ink-3);
+  letter-spacing: 0.01em;
+}
+.hm-item .hm-arrow {
+  grid-row: 1 / 3;
+  width: 36px; height: 36px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--line-2);
+  color: var(--ink-2);
+  transition: transform 220ms ease, background 220ms ease, color 220ms ease;
+}
+.hm-item:hover .hm-arrow, .hm-item:active .hm-arrow {
+  background: var(--acc);
+  color: var(--ink-on-acc);
+  border-color: var(--acc);
+  transform: translateX(2px) rotate(-8deg);
+}
+
+/* ---------- Drawer foot ---------- */
+.hm-foot {
+  position: relative;
+  z-index: 1;
+  margin-top: auto;
+  padding: 32px 0 calc(32px + env(safe-area-inset-bottom, 0));
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.hm-foot-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.hm-pill {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: 46px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: color-mix(in oklab, var(--surface) 65%, transparent);
+  color: var(--ink);
+  font: 500 13px/1 var(--font-sans);
+  transition: background 180ms, border-color 180ms, transform 180ms;
+}
+.hm-pill:active { transform: scale(0.97); }
+.hm-pill:hover { background: var(--surface); border-color: var(--line-2); }
+.hm-pill svg { width: 15px; height: 15px; }
+
+.hm-cta {
+  display: inline-flex; align-items: center; justify-content: space-between;
+  height: 64px;
+  padding: 0 14px 0 24px;
+  border-radius: 999px;
+  background: var(--acc);
+  color: var(--ink-on-acc);
+  font: 500 17px/1 var(--font-sans);
+  letter-spacing: -0.005em;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.18) inset, 0 0 0 1px var(--acc-deep), 0 14px 36px var(--acc-glow);
+  position: relative;
+  overflow: hidden;
+  transition: transform 180ms ease;
+}
+.hm-cta:active { transform: scale(0.985); }
+.hm-cta::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.5) 50%, transparent 70%);
+  transform: translateX(-130%);
+  animation: hm-cta-shine 3.8s ease-in-out infinite;
+}
+@keyframes hm-cta-shine {
+  0%, 60% { transform: translateX(-130%); }
+  85%, 100% { transform: translateX(130%); }
+}
+.hm-cta-arrow {
+  width: 44px; height: 44px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 50%;
+}
+
+.hm-fineprint {
+  font: 500 11px/1.5 var(--font-mono);
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+  text-align: center;
+  margin: 6px 0 0;
+}
+
+/* ============================================================
+   HERO MOBILE REBUILD
+   Override the earlier rule that hid the flame at opacity 0.3
+   and killed the subtitle. Flame becomes a deliberate anchor
+   above the heading; subtitle reads punchy and present.
+   ============================================================ */
+
+.hero-flame-mobile {
+  display: none;
+}
+.hero-sub-mobile {
+  display: none;
+}
+
+@media (max-width: 880px) {
+  /* Reset the inherited centered hack so we can compose deliberately */
+  .hero {
+    min-height: auto;
+    padding-top: 96px;
+    padding-bottom: 32px;
+    text-align: left;
+  }
+  .hero-spec-row {
+    justify-content: space-between;
+    margin-bottom: 28px;
+  }
+  .hero-spec-stats {
+    display: none;
+  }
+
+  /* Hide the desktop "stage" flame entirely on mobile — we use the dedicated mobile one */
+  .hero-prism .hero-stage { display: none !important; }
+  .hero-prism {
+    grid-template-columns: 1fr;
+    text-align: left;
+    align-items: start;
+    justify-items: start;
+    gap: 28px;
+  }
+
+  /* Mobile-only flame anchor sits above the heading */
+  .hero-flame-mobile {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .hero-flame-mobile .flame-stage {
+    width: clamp(180px, 46vw, 240px) !important;
+    height: clamp(180px, 46vw, 240px) !important;
+    margin-left: -10px;
+    animation: gentle-drift 14s ease-in-out infinite;
+  }
+  .hero-flame-mobile-tag {
+    position: absolute;
+    top: 10px;
+    right: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--surface) 65%, transparent);
+    border: 1px solid var(--line);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    font: 500 11px/1 var(--font-mono);
+    letter-spacing: 0.04em;
+    color: var(--ink-2);
+  }
+  .hero-flame-mobile-tag i {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--acc);
+    box-shadow: 0 0 0 3px var(--acc-tint), 0 0 8px var(--acc-glow);
+    animation: hm-pulse 2.2s ease-in-out infinite;
+  }
+
+  .hero-display {
+    font-size: clamp(3.2rem, 14vw, 5.2rem);
+    line-height: 0.9;
+    text-align: left;
+    letter-spacing: -0.045em;
+  }
+  .hero-display .bot::before { font-size: 0.5em; vertical-align: 0.35em; }
+
+  /* Punchy mobile subtitle (in place of the full prose desktop one) */
+  .hero-sub-mobile {
+    display: block;
+    margin-top: 18px;
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.45;
+    color: var(--ink-2);
+    letter-spacing: -0.005em;
+    max-width: 28ch;
+  }
+  .hero-sub-mobile span {
+    color: var(--ink);
+    display: block;
+    margin-top: 6px;
+    font-weight: 500;
+  }
+  .hero-sub { display: none; }
+
+  .hero-meta {
+    grid-template-columns: 1fr;
+    margin-top: 32px;
+    gap: 24px;
+  }
+  .hero-meta-l {
+    gap: 18px;
+    align-items: stretch;
+  }
+  .hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .hero-actions .btn {
+    width: 100%;
+    height: 52px;
+    justify-content: center;
+    font-size: 15px;
+  }
+  .hero-actions .btn-primary { order: -1; }
+  .kbd-hint { display: none !important; }
+
+  /* Telemetry becomes a swipeable scroll-snap strip */
+  .hero-telemetry {
+    grid-template-columns: none;
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding: 16px 0 4px;
+    margin: 8px calc(-1 * var(--page-pad)) 0;
+    padding-inline: var(--page-pad);
+    border-top: 1px solid var(--line);
+    border-bottom: none;
+    text-align: left;
+    scrollbar-width: none;
+  }
+  .hero-telemetry::-webkit-scrollbar { display: none; }
+  .hero-telemetry .row {
+    flex: 0 0 auto;
+    min-width: 130px;
+    scroll-snap-align: start;
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    background: color-mix(in oklab, var(--surface) 60%, transparent);
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .hero-telemetry .row .v {
+    font-size: 22px;
+  }
+}
+
+/* ============================================================
+   PRICING — scroll-snap carousel on mobile, grid on desktop
+   ============================================================ */
+.pricing-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+.plan-blurb {
+  color: rgba(255,255,255,0.5);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+}
+.pricing-dots {
+  display: none;
+}
+.pricing-foot {
+  margin-top: 28px;
+  font-size: 13px;
+  color: var(--ink-3);
+  text-align: center;
+  font-family: var(--font-mono);
+}
+.pricing-foot a {
+  color: var(--acc);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 880px) {
+  .pricing-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+  .pricing-header .display { font-size: clamp(2.8rem, 11vw, 3.6rem); }
+  .pricing-header .currency-row { align-self: flex-start; }
+
+  /* Horizontal scroll-snap rail. Override the earlier `1fr` collapse rule. */
+  .pricing-rail {
+    grid-template-columns: none;
+    display: flex !important;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: visible;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    gap: 16px;
+    padding: 8px 0 18px;
+    margin: 56px calc(-1 * var(--page-pad)) 0;
+    padding-inline: var(--page-pad);
+    scrollbar-width: none;
+  }
+  .pricing-rail::-webkit-scrollbar { display: none; }
+  .pricing-rail .plan {
+    flex: 0 0 84%;
+    max-width: 360px;
+    scroll-snap-align: center;
+    transform: none !important;
+    padding: 32px 26px;
+    min-height: 540px;
+  }
+  .pricing-rail .plan.popular {
+    transform: none !important;
+  }
+  .pricing-rail .plan.popular:hover {
+    transform: translateY(-2px) !important;
+  }
+
+  .pricing-dots {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 18px;
+  }
+  .pricing-dots button {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--line-2);
+    border: 0;
+    transition: background 220ms ease, transform 220ms ease, width 220ms ease;
+    cursor: pointer;
+  }
+  .pricing-dots button.is-active {
+    background: var(--acc);
+    width: 26px;
+    border-radius: 999px;
+    box-shadow: 0 0 12px var(--acc-glow);
+  }
+}
+
+/* ============================================================
+   MANIFESTO — keep desktop grid; give mobile editorial rhythm
+   instead of a flat single-column collapse.
+   ============================================================ */
+@media (max-width: 880px) {
+  .manifesto {
+    grid-template-columns: 1fr;
+    border-radius: var(--r);
+  }
+  .manifesto .mcell {
+    padding: 32px 22px;
+    min-height: 220px;
+  }
+  .manifesto .mcell h3 {
+    font-size: clamp(1.55rem, 6vw, 2rem);
+  }
+  /* Big stats get to breathe on mobile so they read as monuments */
+  .manifesto .m-stat .big {
+    font-size: clamp(5rem, 22vw, 7rem);
+  }
+  /* Quote cell stands out with its own surface */
+  .manifesto .m-quote {
+    background: color-mix(in oklab, var(--acc-tint) 50%, var(--bg));
+  }
+  /* Code cell gets a darker tone for editorial contrast */
+  .manifesto .m-code,
+  .manifesto .m-attestation {
+    background: #08070C;
+  }
+  /* CTA cell pops at full bleed */
+  .manifesto .m-cta {
+    padding: 36px 22px;
+  }
+  .manifesto .m-cta .actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+  .manifesto .m-cta .actions .btn {
+    width: 100%;
+    height: 50px;
+    justify-content: center;
+  }
+}
+
+/* ============================================================
+   SECTION TITLES — tighten mobile rhythm
+   ============================================================ */
+@media (max-width: 880px) {
+  .section { padding-block: 64px; }
+  .section.tight { padding-block: 40px; }
+  .eyebrow-row { margin-bottom: 18px; font-size: 10.5px; letter-spacing: 0.14em; }
+  .display {
+    font-size: clamp(2.6rem, 11vw, 4rem);
+    letter-spacing: -0.045em;
+  }
+}
+
+/* ============================================================
+   SCROLL REVEAL — opt-in via data-reveal attribute
+   ============================================================ */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 700ms cubic-bezier(0.2, 0.7, 0.2, 1), transform 700ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  will-change: opacity, transform;
+}
+[data-reveal].is-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ============================================================
+   TAP-FRIENDLY DEFAULTS on mobile — kill desktop-only effects
+   that misbehave on touch, add tactile press states.
+   ============================================================ */
+@media (hover: none) and (pointer: coarse) {
+  .btn:active { transform: scale(0.97); }
+  .plan:hover { transform: none !important; box-shadow: 0 2px 8px rgba(0,0,0,0.1), 0 20px 60px -20px rgba(0,0,0,0.3) !important; }
+  .plan.popular:hover { transform: scale(1.0) !important; }
+  .rail-card:hover { background: var(--bg); }
+  .rail-card:hover::before { opacity: 0; }
+  .dep-row:hover { background: transparent; color: var(--ink-2); }
+}

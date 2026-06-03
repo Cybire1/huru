@@ -4,6 +4,13 @@ import { Icon } from "./huru-icons";
 import { HuruFlame } from "./huru-flame";
 import Link from "next/link";
 
+const TELEMETRY = [
+  { k: "p50 latency", v: "184ms", accent: true },
+  { k: "active nodes", v: "42" },
+  { k: "models live", v: "13" },
+  { k: "free credits", v: "200", accent: true },
+];
+
 export function HuruHero() {
   return (
     <section className="hero" id="top">
@@ -15,12 +22,24 @@ export function HuruHero() {
           <span className="spec hero-spec-stats">42.NODES &middot; 9.REGIONS &middot; TEE.ATTESTED</span>
         </div>
 
+        {/* Mobile-only flame anchor — sits above the heading, full presence */}
+        <div className="hero-flame-mobile" aria-hidden="true">
+          <HuruFlame size={260} drift={true} />
+          <span className="hero-flame-mobile-tag">
+            <i /> Verified &middot; 0.4s ago
+          </span>
+        </div>
+
         <div className="hero-prism">
           <div>
             <div className="hero-display">
               <span className="top">Inference,</span>
               <span className="bot">attested.</span>
             </div>
+            <p className="hero-sub-mobile">
+              Decentralized AI on 0G.
+              <span> One bearer token. Every response sealed in a TEE.</span>
+            </p>
           </div>
           <div className="hero-stage">
             <span className="label tl">node <b>SGX-FRA-03</b></span>
@@ -35,7 +54,7 @@ export function HuruHero() {
           <div className="hero-meta-l">
             <p className="hero-sub">
               A REST gateway for <em>decentralized AI compute</em> on the 0G Network.
-              Chat and image — behind one bearer token, every response sealed
+              Chat and image &mdash; behind one bearer token, every response sealed
               by a Trusted Execution Environment.
             </p>
             <div className="hero-actions">
@@ -49,11 +68,13 @@ export function HuruHero() {
               </span>
             </div>
           </div>
-          <div className="hero-telemetry">
-            <div className="row"><span className="k">p50 latency</span><span className="v acc">184ms</span></div>
-            <div className="row"><span className="k">active nodes</span><span className="v">42</span></div>
-            <div className="row"><span className="k">models live</span><span className="v">13</span></div>
-            <div className="row"><span className="k">free credits</span><span className="v acc">200</span></div>
+          <div className="hero-telemetry" role="list">
+            {TELEMETRY.map((t) => (
+              <div className="row" role="listitem" key={t.k}>
+                <span className="k">{t.k}</span>
+                <span className={`v ${t.accent ? "acc" : ""}`}>{t.v}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>

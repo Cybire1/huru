@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useTheme } from "next-themes";
 import { Icon } from "./huru-icons";
 import { FlameMini } from "./huru-flame";
+import { HuruMobileMenu } from "./huru-mobile-menu";
 
 const NAV_ITEMS = [
   { key: "how", label: "How it works", href: "/#how" },
@@ -40,13 +41,14 @@ export function HuruNavbar({ current = "home" }: NavbarProps) {
         ))}
       </div>
       <div className="nav-right">
-        <button className="icon-btn" onClick={toggleMode} aria-label="Toggle theme">
+        <button className="icon-btn nav-only-desktop" onClick={toggleMode} aria-label="Toggle theme">
           {theme === "dark" ? <Icon.Sun /> : <Icon.Moon />}
         </button>
-        <Link className="btn btn-primary btn-sm" href="/dashboard">
+        <Link className="btn btn-primary btn-sm nav-only-desktop" href="/dashboard">
           Get API key
           <span className="btn-arrow"><Icon.Arrow width={12} height={12} /></span>
         </Link>
+        <HuruMobileMenu />
       </div>
     </nav>
   );

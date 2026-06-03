@@ -1,11 +1,11 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Icon } from "./huru-icons";
 
 const CURRENCIES: Record<string, { sym: string; rate: number; code: string }> = {
-  NGN: { sym: "\u20A6", rate: 1400, code: "NGN" },
+  NGN: { sym: "₦", rate: 1400, code: "NGN" },
   USD: { sym: "$", rate: 1, code: "USD" },
 };
 
@@ -31,7 +31,7 @@ const PLANS = [
     credits: "1,000",
     blurb: "Solo devs shipping their first integration.",
     features: [
-      "1,000 credits \u00B7 ~1M tokens",
+      "1,000 credits · ~1M tokens",
       "All models + image gen",
       "Consumer billing API",
       "Email support",
@@ -46,10 +46,10 @@ const PLANS = [
     credits: "5,000",
     blurb: "Teams in production running real volume.",
     features: [
-      "5,000 credits \u00B7 ~5M tokens",
+      "5,000 credits · ~5M tokens",
       "Priority routing",
       "Usage exports (CSV / JSON)",
-      "Email support \u00B7 24h",
+      "Email support · 24h",
     ],
     cta: "Get Pro",
   },
@@ -60,9 +60,9 @@ const PLANS = [
     credits: "100,000",
     blurb: "High-volume API and business use.",
     features: [
-      "100,000 credits \u00B7 ~100M tokens",
+      "100,000 credits · ~100M tokens",
       "Dedicated TEE pools",
-      "Slack support \u00B7 4h",
+      "Slack support · 4h",
       "99.9% SLA",
       "Volume discounts",
     ],
@@ -80,6 +80,40 @@ function fmtPrice(usd: number, cur: string) {
 
 export function HuruPricing() {
   const [cur, setCur] = React.useState("USD");
+  const railRef = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    const el = railRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const cards = el.querySelectorAll<HTMLElement>(".plan");
+      const x = el.scrollLeft + el.clientWidth / 2;
+      let best = 0;
+      let bestDist = Infinity;
+      cards.forEach((c, i) => {
+        const center = c.offsetLeft + c.offsetWidth / 2;
+        const d = Math.abs(center - x);
+        if (d < bestDist) {
+          bestDist = d;
+          best = i;
+        }
+      });
+      setActive(best);
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const scrollTo = (i: number) => {
+    const el = railRef.current;
+    if (!el) return;
+    const card = el.querySelectorAll<HTMLElement>(".plan")[i];
+    if (!card) return;
+    el.scrollTo({ left: card.offsetLeft - 16, behavior: "smooth" });
+  };
+
   return (
     <section className="section" id="pricing">
       <div className="container">
@@ -89,7 +123,7 @@ export function HuruPricing() {
           <span>credits never expire</span>
         </div>
 
-        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 32, flexWrap: "wrap" }}>
+        <div className="pricing-header">
           <div className="display" style={{ maxWidth: "14ch" }}>
             Pay for what you <em>ship.</em>
           </div>
@@ -102,7 +136,7 @@ export function HuruPricing() {
           </div>
         </div>
 
-        <div className="pricing-rail">
+        <div className="pricing-rail" ref={railRef}>
           {PLANS.map((p, i) => (
             <div key={i} className={`plan ${p.popular ? "popular" : ""}`}>
               <div className="lbl">
@@ -110,7 +144,7 @@ export function HuruPricing() {
                 {p.popular && <span className="pop">Popular</span>}
               </div>
               <div className="name">For <em>{p.italic}s</em></div>
-              <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 14, lineHeight: 1.5 }}>{p.blurb}</p>
+              <p className="plan-blurb">{p.blurb}</p>
               <div className="price">{fmtPrice(p.usd, cur)}<small>{p.usd > 0 ? "one-time" : ""}</small></div>
               <div className="credits">
                 <b>{p.credits}</b> credits · <span style={{ color: "var(--ink-3)" }}>&asymp; {(parseInt(p.credits.replace(/,/g, "")) * 1000).toLocaleString()} tokens</span>
@@ -126,9 +160,23 @@ export function HuruPricing() {
           ))}
         </div>
 
-        <p style={{ marginTop: 28, fontSize: 13, color: "var(--ink-3)", textAlign: "center", fontFamily: "var(--font-mono)" }}>
-          Economy models (DeepSeek v3): 1 credit/1K tokens · Premium models: up to 8x · Images: 40 credits each.{" "}
-          <a style={{ color: "var(--acc)", textDecoration: "underline", textUnderlineOffset: 3 }} href="/docs">Full pricing</a>
+        <div className="pricing-dots" role="tablist" aria-label="Pricing tier">
+          {PLANS.map((_, i) => (
+            <button
+              key={i}
+              role="tab"
+              aria-selected={active === i}
+              aria-label={`Show plan ${i + 1}`}
+              className={active === i ? "is-active" : ""}
+              onClick={() => scrollTo(i)}
+              type="button"
+            />
+          ))}
+        </div>
+
+        <p className="pricing-foot">
+          Economy models (DeepSeek v3): 1 credit/1K tokens · Premium: up to 8x · Images: 40 credits each.{" "}
+          <a href="/docs">Full pricing</a>
         </p>
       </div>
     </section>
