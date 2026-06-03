@@ -68,6 +68,20 @@ export const runtimeConfig = {
  */
 export const creditPacks: HuruCreditPack[] = [
   {
+    packId: "pack_sip",
+    name: "Sip",
+    amountMinor: 10000,        // 100 NGN — entry tier
+    currency: runtimeConfig.defaultCurrency,
+    creditsAwarded: 50,        // 50 credits → ~50K economy tokens
+  },
+  {
+    packId: "pack_sample",
+    name: "Sample",
+    amountMinor: 20000,        // 200 NGN
+    currency: runtimeConfig.defaultCurrency,
+    creditsAwarded: 100,       // 100 credits → ~100K economy tokens
+  },
+  {
     packId: "pack_starter",
     name: "Starter",
     amountMinor: 280000,       // 2,800 NGN ≈ $2
