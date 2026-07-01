@@ -9,6 +9,7 @@ const ALLOWED_ORIGINS = (process.env.HURU_CORS_ALLOWED_ORIGINS || "")
 
 const ALLOWED_HEADERS = [
 	"Authorization",
+	"X-Huru-Authorization",
 	"Content-Type",
 	"X-Huru-Api-Key",
 	"X-Consumer-Email",

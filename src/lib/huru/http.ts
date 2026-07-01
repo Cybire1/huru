@@ -2,7 +2,9 @@ import { createHash } from "node:crypto";
 import type { NextRequest } from "next/server";
 
 export function getBearerToken(request: NextRequest): string | null {
-  const header = request.headers.get("authorization");
+  const header =
+    request.headers.get("authorization") ??
+    request.headers.get("x-huru-authorization");
   if (!header?.startsWith("Bearer ")) {
     return null;
   }
