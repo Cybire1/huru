@@ -1,7 +1,17 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { signConsumerToken } from "@/lib/huru/consumer-token";
+import { getSupabaseAuthConfig } from "@/lib/huru/supabase-auth";
 import { authenticateProject, resolveConsumer } from "@/lib/huru/store";
+
+function consumerErrorRedirect(origin: string, reason: string, targetOrigin?: string) {
+  const url = new URL("/auth/consumer/success", origin);
+  url.searchParams.set("error", reason);
+  if (targetOrigin) {
+    url.searchParams.set("origin", targetOrigin);
+  }
+  return NextResponse.redirect(url);
+}
 
 /**
  * POST: Preflight check — validates API key before starting OAuth flow.
@@ -30,6 +40,10 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
+  const oauthError =
+    url.searchParams.get("error_description") ||
+    url.searchParams.get("error") ||
+    "";
 
   // Decode state from URL params
   const rawState = url.searchParams.get("state") ?? "";
@@ -41,24 +55,26 @@ export async function GET(request: NextRequest) {
   }
 
   const { apiKey, origin } = stateData;
-  const errorRedirect = `${url.origin}/auth/consumer/success?error=auth_failed`;
+
+  if (oauthError) {
+    return consumerErrorRedirect(url.origin, oauthError, origin);
+  }
 
   if (!code || !apiKey || !origin) {
-    return NextResponse.redirect(errorRedirect);
+    return consumerErrorRedirect(url.origin, "Missing OAuth state.", origin);
   }
 
   // Validate API key
   const project = await authenticateProject(apiKey);
   if (!project) {
-    return NextResponse.redirect(errorRedirect);
+    return consumerErrorRedirect(url.origin, "Invalid API key.", origin);
   }
 
   // Exchange OAuth code for Supabase session
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || "";
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() || "";
+  const { supabaseUrl, supabaseAnonKey } = getSupabaseAuthConfig();
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    return NextResponse.redirect(errorRedirect);
+    return consumerErrorRedirect(url.origin, "Supabase auth is not configured.", origin);
   }
 
   const response = NextResponse.redirect(
@@ -89,7 +105,11 @@ export async function GET(request: NextRequest) {
     await supabase.auth.exchangeCodeForSession(code);
 
   if (sessionError || !sessionData?.user?.email) {
-    return NextResponse.redirect(errorRedirect);
+    return consumerErrorRedirect(
+      url.origin,
+      sessionError?.message ?? "Google did not return an email.",
+      origin,
+    );
   }
 
   const userEmail = sessionData.user.email;

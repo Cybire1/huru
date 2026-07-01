@@ -1,18 +1,21 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect } from "react";
 
 function SuccessBridge() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const origin = searchParams.get("origin");
   const error = searchParams.get("error");
-  const [status, setStatus] = useState("Processing...");
+  const status = error
+    ? `Authentication failed: ${error}`
+    : !token || !origin
+      ? "Missing token or origin. You can close this window."
+      : "Signed in! This window will close.";
 
   useEffect(() => {
     if (error) {
-      setStatus("Authentication failed. You can close this window.");
       if (window.opener) {
         window.opener.postMessage(
           { type: "huru:auth:error", error },
@@ -23,7 +26,6 @@ function SuccessBridge() {
     }
 
     if (!token || !origin) {
-      setStatus("Missing token or origin. You can close this window.");
       return;
     }
 
@@ -32,10 +34,7 @@ function SuccessBridge() {
         { type: "huru:auth:success", token },
         origin,
       );
-      setStatus("Signed in! This window will close.");
       setTimeout(() => window.close(), 300);
-    } else {
-      setStatus("Unable to communicate with the parent window.");
     }
   }, [token, origin, error]);
 

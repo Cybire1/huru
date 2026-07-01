@@ -97,6 +97,7 @@ const state = {
 };
 
 let bootstrapSeedPromise: Promise<void> | null = null;
+let lastStoreFallback: { code: string; message: string } | null = null;
 
 function cloneProject(project: HuruProjectRecord): HuruProjectRecord {
   return { ...project };
@@ -444,6 +445,44 @@ function memoryFailRequest(requestId: string, errorCode: string, errorMessage: s
   return cloneRequest(failed);
 }
 
+function isRecoverableStoreError(error: unknown) {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const err = error as { code?: unknown; message?: unknown };
+  const code = typeof err.code === "string" ? err.code : "";
+  const message = typeof err.message === "string" ? err.message : "";
+
+  return (
+    code === "PGRST205" ||
+    code === "42P01" ||
+    message.includes("Could not find the table") ||
+    message.includes("schema cache") ||
+    (message.includes("relation") && message.includes("does not exist"))
+  );
+}
+
+function summarizeStoreError(error: unknown) {
+  if (!error || typeof error !== "object") {
+    return { code: "store_unavailable", message: "Store unavailable." };
+  }
+
+  const err = error as { code?: unknown; message?: unknown };
+  return {
+    code: typeof err.code === "string" ? err.code : "store_unavailable",
+    message: typeof err.message === "string" ? err.message : "Store unavailable.",
+  };
+}
+
+export function getStoreFallbackStatus() {
+  return {
+    usingFallback: Boolean(lastStoreFallback),
+    code: lastStoreFallback?.code ?? null,
+    message: lastStoreFallback?.message ?? null,
+  };
+}
+
 async function runWithStoreFallback<T>(
   operation: () => Promise<T>,
   fallback: () => T | Promise<T>,
@@ -452,7 +491,19 @@ async function runWithStoreFallback<T>(
     return fallback();
   }
 
-  return operation();
+  try {
+    const result = await operation();
+    lastStoreFallback = null;
+    return result;
+  } catch (error) {
+    if (!isRecoverableStoreError(error)) {
+      throw error;
+    }
+
+    lastStoreFallback = summarizeStoreError(error);
+    console.warn("[huru/store] Supabase schema unavailable; using bootstrap store fallback.", error);
+    return fallback();
+  }
 }
 
 async function ensureBootstrapSeeded() {

@@ -220,7 +220,7 @@ async function ensureDashboardUser(user: DashboardAuthUser) {
     (typeof user.user_metadata?.full_name === "string" && user.user_metadata.full_name.trim()) ||
     null;
 
-  const existing = await supabase
+  let existing = await supabase
     .from("huru_users")
     .select("id, public_id, email, name, auth_provider, auth_provider_user_id")
     .eq("auth_provider_user_id", user.id)
@@ -230,10 +230,24 @@ async function ensureDashboardUser(user: DashboardAuthUser) {
     throw existing.error;
   }
 
+  if (!existing.data) {
+    existing = await supabase
+      .from("huru_users")
+      .select("id, public_id, email, name, auth_provider, auth_provider_user_id")
+      .eq("email", email)
+      .maybeSingle<DashboardUserRow>();
+
+    if (existing.error) {
+      throw existing.error;
+    }
+  }
+
   if (existing.data) {
     const updates: Partial<DashboardUserRow> = {
       email,
       name,
+      auth_provider: "supabase",
+      auth_provider_user_id: user.id,
     };
 
     const updated = await supabase

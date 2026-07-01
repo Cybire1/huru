@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DashboardAnalytics, DashboardOverview, DashboardProjectDetail, DashboardSection } from "./dash-types";
-import { getRedirectUrl } from "./dash-helpers";
+import { getApiErrorMessage, getRedirectUrl } from "./dash-helpers";
 
 /* ── Context shape ── */
 
@@ -53,6 +53,19 @@ type DashContextValue = {
 
 const DashContext = createContext<DashContextValue | null>(null);
 
+function getInitialAuthStatus() {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("auth") !== "error") {
+    return "";
+  }
+
+  return params.get("message") || "Google sign-in failed.";
+}
+
 export function useDash() {
   const ctx = useContext(DashContext);
   if (!ctx) throw new Error("useDash must be used inside <DashboardProvider>");
@@ -65,7 +78,7 @@ export function DashboardProvider({ supabase, children }: { supabase: SupabaseCl
   const panelRef = useRef<HTMLElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
 
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState(getInitialAuthStatus);
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [projectDetail, setProjectDetail] = useState<DashboardProjectDetail | null>(null);
@@ -86,6 +99,18 @@ export function DashboardProvider({ supabase, children }: { supabase: SupabaseCl
   const [analyticsEndpointFilter, setAnalyticsEndpointFilter] = useState("");
   const [analyticsStatusFilter, setAnalyticsStatusFilter] = useState("");
 
+  const loadOverview = useCallback(async (accessToken: string) => {
+    const res = await fetch("/api/dashboard/me", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!res.ok) {
+      const payload = (await res.json().catch(() => null)) as Record<string, unknown> | null;
+      throw new Error(getApiErrorMessage(payload) ?? "Could not load dashboard.");
+    }
+
+    return (await res.json()) as DashboardOverview;
+  }, []);
+
   const flashCopy = useCallback((text: string, setter: (v: string | null) => void) => {
     void navigator.clipboard.writeText(text);
     setter("Copied!");
@@ -95,14 +120,23 @@ export function DashboardProvider({ supabase, children }: { supabase: SupabaseCl
   /* ── Data: session + overview ── */
   useEffect(() => {
     let mounted = true;
+    const params = new URLSearchParams(window.location.search);
+    const authStatus = params.get("auth");
+    if (authStatus === "error" || authStatus === "success") {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+
     supabase.auth.getSession().then(async ({ data }) => {
       if (!mounted) return;
       if (data.session?.access_token) {
-        const res = await fetch("/api/dashboard/me", { headers: { Authorization: `Bearer ${data.session.access_token}` } });
-        if (res.ok) {
-          const p = (await res.json()) as DashboardOverview;
+        try {
+          const p = await loadOverview(data.session.access_token);
           setOverview(p);
           setSelectedProjectId((c) => c && p.projects.some((x) => x.id === c) ? c : p.projects[0]?.id ?? null);
+        } catch (error) {
+          setOverview(null);
+          setVisibleApiKey(null);
+          setStatus(error instanceof Error ? error.message : "Could not load dashboard.");
         }
       }
       setSessionReady(true);
@@ -113,16 +147,19 @@ export function DashboardProvider({ supabase, children }: { supabase: SupabaseCl
         setDetailStatus(""); setVisibleApiKey(null);
         setSessionReady(true); return;
       }
-      const res = await fetch("/api/dashboard/me", { headers: { Authorization: `Bearer ${session.access_token}` } });
-      if (res.ok) {
-        const p = (await res.json()) as DashboardOverview;
+      try {
+        const p = await loadOverview(session.access_token);
         setOverview(p);
         setSelectedProjectId((c) => c && p.projects.some((x) => x.id === c) ? c : p.projects[0]?.id ?? null);
-      } else { setOverview(null); setVisibleApiKey(null); }
+      } catch (error) {
+        setOverview(null);
+        setVisibleApiKey(null);
+        setStatus(error instanceof Error ? error.message : "Could not load dashboard.");
+      }
       setSessionReady(true);
     });
     return () => { mounted = false; listener.subscription.unsubscribe(); };
-  }, [supabase]);
+  }, [supabase, loadOverview]);
 
   /* ── Data: project detail ── */
   useEffect(() => {
@@ -169,13 +206,14 @@ export function DashboardProvider({ supabase, children }: { supabase: SupabaseCl
     const { data } = await supabase.auth.getSession();
     const token = data.session?.access_token;
     if (!token) return;
-    const res = await fetch("/api/dashboard/me", { headers: { Authorization: `Bearer ${token}` } });
-    if (res.ok) {
-      const p = (await res.json()) as DashboardOverview;
+    try {
+      const p = await loadOverview(token);
       setOverview(p);
       setSelectedProjectId((c) => c && p.projects.some((x) => x.id === c) ? c : p.projects[0]?.id ?? null);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Could not load dashboard.");
     }
-  }, [supabase]);
+  }, [supabase, loadOverview]);
 
   const onSignOut = useCallback(async () => {
     setStatus(""); setDetailStatus(""); setSelectedProjectId(null);
@@ -192,7 +230,7 @@ export function DashboardProvider({ supabase, children }: { supabase: SupabaseCl
   }, [supabase]);
 
   const onGoogle = useCallback(async () => {
-    setStatus("");
+    setStatus("Redirecting to Google...");
     const { error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: getRedirectUrl() } });
     if (error) setStatus(error.message);
   }, [supabase]);
